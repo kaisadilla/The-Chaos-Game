@@ -33,7 +33,7 @@ namespace ChaosGame {
          *** The index [0] is the most recent vertex. When a new vertex is added, all other
          * vertices are pushed one position backwards (from 0 to 1, etc). If the array is
          * of size 0, it will not store anything.*/
-        private Vertex[] lastChosenVertices = null;
+        private int[] vertexCache = new int[5] { -1, -1, -1, -1, -1};
         //private Vertex[] lastChosenVertices = null;
 
         //Visual variables:
@@ -101,6 +101,16 @@ namespace ChaosGame {
             RecalculateVerticesCompressionRatio();
             RecalculateVerticesRotation();
             RecalculateVerticesWeight();
+            Rules = new List<Rule> { Rule.GetCheckVerticesRule(0, 1, 1), Rule.GetCheckVerticesRule(0, 1, -1) };
+            //Rules = new List<Rule> { Rule.GetCheckVerticesRule(0, 0, 0) };
+
+            int requiredCache = 0;
+            foreach(Rule r in Rules) {
+                if (r.RequiredVertexCache > requiredCache) requiredCache = r.RequiredVertexCache;
+            }
+            vertexCache = new int[requiredCache + 1];
+            for(int i = 0; i < vertexCache.Length; i++) vertexCache[i] = -1;
+
         }
 
         public void AssignSeed(Point seed) {
@@ -131,7 +141,8 @@ namespace ChaosGame {
         public Point GetAutomaticSeed() {
             RecalculateVerticesCompressionRatio();
             RecalculateVerticesRotation();
-            return GetNextPoint(Vertices[0].Point, Vertices[1]);
+            TryGetNextPoint(Vertices[0].Point, Vertices[1], out Point nextPoint);
+            return nextPoint;
         }
         //At this moment, there is no option to highlight the seed, so the method with no parameters is the only one used by the form.
         public void DrawSeed() => DrawSeed(false, Color.Transparent);
@@ -145,7 +156,6 @@ namespace ChaosGame {
         public void DrawNextFrame(int iterations, bool highlightGeneration, Color highlightColor) {
             //TODO: this first redraws the last point to be 'black', then draws n number of points obtained with DoNextIteration(), and finally, the last one, is drawn 'green'
             //and the vertices are redrawn, if necessary.
-            //maybe keepverticesontop is not necessary and can be passed here as a parameter.
             if (lastPoint != nullPoint) {
                 DrawPoint(lastPoint, GpSize, GpColor);
             }
@@ -165,40 +175,67 @@ namespace ChaosGame {
 
         #region Methods that control the logic of the game
         private Point DoNextIteration(out Vertex chosenVertex) {
-            int randomInt = rng.Next(totalWeight);
-            //TODO: Apply the rules about vertex selection.
-
+            int chosenIndex;
             chosenVertex = null;
 
-            if (checkWeight) chosenVertex = GetWeightedVertex(randomInt);
-            else chosenVertex = Vertices[randomInt];
+            bool isVertexValid;
+            do {
+                int randomInt = rng.Next(totalWeight);
+                isVertexValid = true;
+
+                if (checkWeight) {
+                    chosenIndex = GetChosenIndex(randomInt);
+                }
+                else {
+                    chosenIndex = randomInt;
+                }
+
+                chosenVertex = Vertices[chosenIndex];
+
+                foreach(Rule r in Rules) {
+                    isVertexValid = r.IsVertexValid(chosenIndex, Vertices.Count, vertexCache);
+                    if (!isVertexValid) break;
+                }
+
+            }
+            while (!isVertexValid);
 
             //If lastChosenVertices has to store values, do so:
-            if(lastChosenVertices != null) {
+            if(vertexCache != null) {
                 //First push all values one index deeper.
-                for (int i = 0; i < lastChosenVertices.Length; i++) {
-                    if (i + 1 >= lastChosenVertices.Length) break;
+                for (int i = 0; i < vertexCache.Length; i++) {
+                    if (i + 1 >= vertexCache.Length) break;
                     else {
-                        lastChosenVertices[i + 1] = lastChosenVertices[i];
+                        vertexCache[i + 1] = vertexCache[i];
                     }
                 }
                 //And now add the new value.
-                lastChosenVertices[0] = chosenVertex;
+                vertexCache[0] = chosenIndex;
             }
-            
-            return GetNextPoint(lastPoint, chosenVertex);
+
+            if(TryGetNextPoint(lastPoint, chosenVertex, out Point nextPoint)) {
+                return nextPoint;
+            }
+            else {
+                return DoNextIteration(out chosenVertex);
+            }
         }
-        private Point GetNextPoint(Point currentPoint, Vertex chosenVertex) {
+
+        private bool TryGetNextPoint(Point currentPoint, Vertex chosenVertex, out Point nextPoint) {
             int x = (int)ExtraMath.MiddleValueByCompression(currentPoint.X, chosenVertex.X, chosenVertex.compressionRatio);
             int y = (int)ExtraMath.MiddleValueByCompression(currentPoint.Y, chosenVertex.Y, chosenVertex.compressionRatio);
 
-            Point nextPoint = new Point(x, y);
+            nextPoint = new Point(x, y);
             nextPoint = ExtraMath.RotatePointAroundOrigin(nextPoint, chosenVertex.Point, chosenVertex.rotation);
 
             //Point middlePoint = new Point(350, 225);
             //nextPoint = ExtraMath.RotatePointAroundOrigin(nextPoint, middlePoint, chosenVertex.rotation);
 
-            return nextPoint;
+            foreach(Rule r in Rules) {
+                return r.IsPointValid(nextPoint, MemoryBitmap);
+            }
+            
+            return true;
         }
         #endregion
 
@@ -278,16 +315,25 @@ namespace ChaosGame {
             }
         }*/
 
-        private Vertex GetWeightedVertex(int randomInt) {
+        private int GetChosenIndex(int randomInt) {
             int accumulatedWeight = 0;
+            int chosenIndex = 0;
             foreach (Vertex v in Vertices) {
                 accumulatedWeight += v.weight;
-                if (accumulatedWeight >= randomInt) return v;
+                if (accumulatedWeight >= randomInt) return chosenIndex;
+                else chosenIndex++;
             }
-            return null;
+            return chosenIndex;
         }
 
-
+        public void LoadOwo() {
+            //MemoryBitmap = new Bitmap(@"E:\owo.bmp");
+            MemoryBitmap = new Bitmap(MemoryBitmap.Height, MemoryBitmap.Width);
+            using (Graphics g = Graphics.FromImage(MemoryBitmap)) {
+                //SolidBrush b = new SolidBrush(Color.Black);
+                g.DrawImage(new Bitmap(@"E:\owo.bmp"), 0, 0);
+            }
+        }
 
         //NOT REFACTORED YET:
 
@@ -351,6 +397,48 @@ namespace ChaosGame {
     }
 
     public class Rule {
+        //Last vertices from [m] (most recent) to [n] (oldest) were the same. And this one is at distance [distance] from that vertex.
+        private bool checkOldVertices;
+        private int m, n, distance;
+        private bool notAllowColor;
+        private Color color;
 
+        public int RequiredVertexCache {
+            get {
+                return n;
+            }
+        }
+
+        public bool IsVertexValid(int index, int totalVertices, int[] cache) {
+            if (!checkOldVertices) return true;
+            if (cache[n] == -1) return true;
+            //Check if last vertices from m to n were the same.
+            for (int i = m; i < n; i++) {
+                if (cache[i] != cache[i + 1]) return true;
+            }
+            //Check if current vertex is valid.
+            int modifiedIndex = index + distance;
+
+            if (modifiedIndex < 0) modifiedIndex += totalVertices;
+            if (modifiedIndex > totalVertices - 1) modifiedIndex -= totalVertices;
+
+            if (modifiedIndex == cache[0]) return false;
+            return true;
+        }
+
+        public bool IsPointValid(Point point, Bitmap bitmap) {
+            if (!notAllowColor) return true;
+            if (bitmap.GetPixel(point.X, point.Y).ToArgb() == color.ToArgb()) {
+                return false;
+            }
+            return true;
+        }
+
+        public static Rule GetCheckVerticesRule(int m, int n, int distance) {
+            return new Rule { checkOldVertices = true, m = m, n = n, distance = distance };
+        }
+        public static Rule GetBannedColorRule(Color color) {
+            return new Rule { notAllowColor = true, color = color };
+        }
     }
 }

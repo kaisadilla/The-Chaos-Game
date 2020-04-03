@@ -72,6 +72,7 @@
             this.numeric_seedX = new System.Windows.Forms.NumericUpDown();
             this.checkBox_autoSeed = new System.Windows.Forms.CheckBox();
             this.groupBox_generation = new System.Windows.Forms.GroupBox();
+            this.button1 = new System.Windows.Forms.Button();
             this.checkBox_highlightSel = new System.Windows.Forms.CheckBox();
             this.button_stopGen = new System.Windows.Forms.Button();
             this.button_startGen = new System.Windows.Forms.Button();
@@ -234,6 +235,11 @@
             this.numeric_gpSize.Location = new System.Drawing.Point(42, 14);
             this.numeric_gpSize.Maximum = new decimal(new int[] {
             10000,
+            0,
+            0,
+            0});
+            this.numeric_gpSize.Minimum = new decimal(new int[] {
+            1,
             0,
             0,
             0});
@@ -712,6 +718,7 @@
             // 
             // groupBox_generation
             // 
+            this.groupBox_generation.Controls.Add(this.button1);
             this.groupBox_generation.Controls.Add(this.checkBox_highlightSel);
             this.groupBox_generation.Controls.Add(this.button_stopGen);
             this.groupBox_generation.Controls.Add(this.button_startGen);
@@ -730,6 +737,16 @@
             this.groupBox_generation.TabIndex = 4;
             this.groupBox_generation.TabStop = false;
             this.groupBox_generation.Text = "Generation";
+            // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(170, 19);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.TabIndex = 108;
+            this.button1.Text = "button1";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // checkBox_highlightSel
             // 
@@ -1168,6 +1185,7 @@
         private System.Windows.Forms.Label label_highlightSel;
         private System.Windows.Forms.Button button_clearRules;
         private System.Windows.Forms.Button button_clearVertices;
+        private System.Windows.Forms.Button button1;
     }
 }
 

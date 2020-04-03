@@ -235,5 +235,10 @@ namespace ChaosGame {
                 numeric_zoom.Value = 1.00m;
             }
         }
+
+        private void button1_Click(object sender, EventArgs e) {
+            gm.LoadOwo();
+            UpdateBitmap();
+        }
     }
 }

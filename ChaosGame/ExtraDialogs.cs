@@ -541,6 +541,165 @@ namespace System.Windows.Forms.ExtraDialogs {
         }
     }
 
+    public class IFSEditor {
+        #region Components of the dialog
+        private Form dialog = new Form() {
+            ClientSize = new Drawing.Size(378, 313),
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            Text = "List of points",
+            StartPosition = FormStartPosition.CenterScreen,
+            MaximizeBox = false,
+            MinimizeBox = false,
+            //HelpButton = true
+        };
+
+        private Label label_formulas = new Label() {
+            Left = 10,
+            Top = 10,
+            AutoSize = true,
+            Text = "Current formulæ:"
+        };
+
+        private DataGridView table_formulas = new DataGridView() {
+            Left = 10,
+            Top = 30,
+            Width = 358,
+            Height = 244,
+            ColumnCount = 7
+        };
+
+        private Button button_drawFern = new Button() {
+            Left = 10,
+            Top = 280,
+            Width = 100,
+            Text = "Draw fern"
+        };
+
+        private Button button_ok = new Button() {
+            Left = 293,
+            Top = 280,
+            Width = 75,
+            Text = "OK",
+            DialogResult = DialogResult.OK
+        };
+        #endregion
+
+        private List<IFSFormula> CurrentFormulaList {
+            get {
+                List<IFSFormula> list = new List<IFSFormula>();
+                foreach (DataGridViewRow row in table_formulas.Rows) {
+                    if (row.IsNewRow == true) continue;
+
+                    float a, b, c, d, e, f, p;
+                    
+                    if (row.Cells[0].Value == null) continue;
+                    else if (!float.TryParse(row.Cells[0].Value.ToString(), out float parsedF)) continue;
+                    else a = parsedF;
+
+                    if (row.Cells[1].Value == null) continue;
+                    else if (!float.TryParse(row.Cells[1].Value.ToString(), out float parsedF)) continue;
+                    else b = parsedF;
+
+                    if (row.Cells[2].Value == null) continue;
+                    else if (!float.TryParse(row.Cells[2].Value.ToString(), out float parsedF)) continue;
+                    else c = parsedF;
+
+                    if (row.Cells[3].Value == null) continue;
+                    else if (!float.TryParse(row.Cells[3].Value.ToString(), out float parsedF)) continue;
+                    else d = parsedF;
+
+                    if (row.Cells[4].Value == null) continue;
+                    else if (!float.TryParse(row.Cells[4].Value.ToString(), out float parsedF)) continue;
+                    else e = parsedF;
+
+                    if (row.Cells[5].Value == null) continue;
+                    else if (!float.TryParse(row.Cells[5].Value.ToString(), out float parsedF)) continue;
+                    else f = parsedF;
+
+                    if (row.Cells[6].Value == null) continue;
+                    else if (!float.TryParse(row.Cells[6].Value.ToString(), out float parsedF)) continue;
+                    else p = parsedF;
+
+                    list.Add(new IFSFormula(a, b, c, d, e, f, p));
+                }
+
+                return list;
+            }
+        }
+
+        public List<IFSFormula> ShowDialog(List<IFSFormula> formulaList) {
+            table_formulas.Columns[0].Name = "a";
+            table_formulas.Columns[0].Width = 45;
+            table_formulas.Columns[1].Name = "b";
+            table_formulas.Columns[1].Width = 45;
+            table_formulas.Columns[2].Name = "c";
+            table_formulas.Columns[2].Width = 45;
+            table_formulas.Columns[3].Name = "d";
+            table_formulas.Columns[3].Width = 45;
+            table_formulas.Columns[4].Name = "e";
+            table_formulas.Columns[4].Width = 45;
+            table_formulas.Columns[5].Name = "f";
+            table_formulas.Columns[5].Width = 45;
+            table_formulas.Columns[6].Name = "p";
+            table_formulas.Columns[6].Width = 45;
+
+            //Whenever we input a new value in a row, we check if all values in that row are correct.
+            table_formulas.CellValueChanged += (sender, e) => {
+                AnalyzeRow(e.RowIndex);
+            };
+            //Adds the functionality of pressing the 'delete' button to delete selected cells' values.
+            table_formulas.KeyDown += (sender, e) => {
+                if (e.KeyCode == Keys.Delete) {
+                    foreach (DataGridViewCell selectedCell in table_formulas.SelectedCells) {
+                        selectedCell.Value = null;
+                    }
+                }
+            };
+
+            button_drawFern.Click += (sender, e) => {
+                DialogResult result = MessageBox.Show("Creating a fern will delete the current formulæ. Do you wish to continue?",
+                    "Clear vertices",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question
+                    );
+
+                if (result == DialogResult.Yes) {
+                    table_formulas.Rows.Clear();
+                    table_formulas.Rows.Add(0, 0, 0, 0.16, 0, 0, 0.1);
+                    table_formulas.Rows.Add(0.85, 0.04, -0.04, 0.85, 0, 1.6, 0.85);
+                    table_formulas.Rows.Add(0.20, -0.26, 0.23, 0.22, 0, 1.6, 0.07);
+                    table_formulas.Rows.Add(-0.15, 0.28, 0.26, 0.24, 0, 0.44, 0.07);
+                }
+            };
+
+            //If the list is null, this will crash. If it becomes a problem, use ?? new List<IFSFormula>().
+            foreach (IFSFormula f in formulaList) {
+                table_formulas.Rows.Add(f.a, f.b, f.c, f.d, f.e, f.f, f.p);
+            };
+
+            dialog.Controls.Add(label_formulas);
+            dialog.Controls.Add(table_formulas);
+            dialog.Controls.Add(button_drawFern);
+            dialog.Controls.Add(button_ok);
+
+            return dialog.ShowDialog() == DialogResult.OK ? CurrentFormulaList : null;
+        }
+
+        private void AnalyzeRow(int rowIndex) {
+            DataGridViewRow row = table_formulas.Rows[rowIndex];
+
+            foreach (DataGridViewCell cell in row.Cells) {
+                if (!float.TryParse(cell.FormattedValue.ToString(), out float f)) {
+                    row.ErrorText = "One of the values in this row is invalid. This row will not be saved.";
+                    return;
+                }
+            }
+
+            row.ErrorText = "";
+        }
+    }
+
+
     class AddRuleDialog {
         #region Components of the dialog
         private Form dialog = new Form() {

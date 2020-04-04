@@ -51,7 +51,7 @@ namespace ChaosGame {
 
         private void button_restart_Click(object sender, EventArgs e) {
             groupBox_visualOptions.Enabled = true;
-            groupBox_rules.Enabled = false;
+            tabControl_rules.Enabled = false;
             groupBox_generation.Enabled = false;
             gm.ClearBitmap();
             UpdateBitmap();
@@ -60,16 +60,23 @@ namespace ChaosGame {
 
         #region Visual options controls
         private void button_applyVisualOptions_Click(object sender, EventArgs e) {
-            gm.AssignVisualVariables(BitmapWidth, BitmapHeight, BitmapBgColor, VertexSize, VertexColor, KeepVerticesOnTop, GpSize, GpColor);
+            if(!ImportBitmap) {
+                gm.AssignVisualVariables(BitmapWidth, BitmapHeight, BitmapBgColor, VertexSize, VertexColor, KeepVerticesOnTop, GpSize, GpColor);
+            }
+            else {
+                gm.AssignVisualVariablesAndLoadImage(filePath, VertexSize, VertexColor, KeepVerticesOnTop, GpSize, GpColor);
+            }
+
             groupBox_visualOptions.Enabled = false;
-            groupBox_rules.Enabled = true;
+            tabControl_rules.Enabled = true;
             groupBox_generation.Enabled = false;
 
             LoadBitmap();
             /*New maps are generated with 3 vertices forming a triangle.
              * This makes the program display those vertices right away when clicking on "ok",
              * so the user knows there are 3 vertices already generated. */
-            PreviewVertices();
+            if (tabControl_rules.SelectedIndex == 0) PreviewVertices();
+            else if (tabControl_rules.SelectedIndex == 1) PreviewAxes();
         }
 
         private void UpdatePictureBoxEvent(object sender, EventArgs e) {
@@ -92,11 +99,43 @@ namespace ChaosGame {
             c.InitialColor = BitmapBgColor;
             BitmapBgColor = c.ShowDialog();
         }
+        
+        private void checkBox_import_CheckedChanged(object sender, EventArgs e) {
+            ImportBitmap = ImportBitmap;
+        }
 
-        private void pictureBox_ipColor_DoubleClick(object sender, EventArgs e) {
+        private void button_import_Click(object sender, EventArgs e) {
+            OpenFileDialog o = new OpenFileDialog();
+
+            if(o.ShowDialog() == DialogResult.OK && o.FileName != "") {
+                filePath = o.FileName;
+                Bitmap chosenImage = new Bitmap(filePath);
+                BitmapWidth = chosenImage.Width;
+                BitmapHeight = chosenImage.Height;
+            }
+        }
+
+        private void pictureBox_vertexColor_DoubleClick(object sender, EventArgs e) {
             ColorPicker c = new ColorPicker();
             c.InitialColor = VertexColor;
             VertexColor = c.ShowDialog();
+        }
+
+        private void checkBox_ipOnTop_CheckedChanged(object sender, EventArgs e) {
+            if(KeepVerticesOnTop == false) {
+                HighlightGeneration = false;
+                checkBox_highlightSel.Enabled = false;
+                label_highlightSel.Enabled = false;
+                label_highlightVal.Enabled = false;
+                pictureBox_highlightColor.Enabled = false;
+            }
+            else {
+                HighlightGeneration = true;
+                checkBox_highlightSel.Enabled = true;
+                label_highlightSel.Enabled = true;
+                label_highlightVal.Enabled = true;
+                pictureBox_highlightColor.Enabled = true;
+            }
         }
 
         private void pictureBox_gpColor_DoubleClick(object sender, EventArgs e) {
@@ -107,13 +146,23 @@ namespace ChaosGame {
         #endregion
 
         #region Rules options controls
+
+        private void tabControl_rules_SelectedIndexChanged(object sender, EventArgs e) {
+            if (tabControl_rules.SelectedIndex == 0) {
+                PreviewVertices();
+            }
+            else {
+                UpdateBitmap();
+            }
+        }
+
         private void button_ApplyRulesOptions_Click(object sender, EventArgs e) {
-            gm.AssignRulesVariables(Vertices, CompressionRatio, Rotation, Rules, IterationsToIgnore);
+            gm.AssignRulesVariables(Vertices, DrawSides, SideColor, CompressionRatio, Rotation, Rules, IterationsToIgnore);
             if (UseAutomaticSeed) gm.AssignSeed(gm.GetAutomaticSeed());
             else gm.AssignSeed(Seed);
             
             groupBox_visualOptions.Enabled = false;
-            groupBox_rules.Enabled = false;
+            tabControl_rules.Enabled = false;
             groupBox_generation.Enabled = true;
             
             gm.DrawVertices();
@@ -133,6 +182,16 @@ namespace ChaosGame {
         private void button_clearVertices_Click(object sender, EventArgs e) {
             Vertices.Clear();
             PreviewVertices();
+        }
+
+        private void checkBox_drawSides_CheckedChanged(object sender, EventArgs e) {
+            PreviewVertices();
+        }
+
+        private void pictureBox_sideColor_DoubleClick(object sender, EventArgs e) {
+            ColorPicker c = new ColorPicker();
+            c.InitialColor = SideColor;
+            SideColor = c.ShowDialog();
         }
         //This is only active when "Add vertices by clicking..." is checked.
         private void pictureBox_bitmap_MouseClick(object sender, MouseEventArgs e) {
@@ -161,6 +220,26 @@ namespace ChaosGame {
         private void numeric_compressionRatio_ValueChanged(object sender, EventArgs e) {
             label_dist.Text = string.Format("Dist: {0:0.####}", 1 / CompressionRatio);
         }
+
+        //Use IFS
+        private void button_ApplyIFS_Click(object sender, EventArgs e) {
+            gm.AssignIFSVariables(IfsFormulas, CenterPoint, IfsMagnificationX, IfsMagnificationY, DrawAxes);
+            groupBox_visualOptions.Enabled = false;
+            tabControl_rules.Enabled = false;
+            groupBox_generation.Enabled = true;
+        }
+
+        private void rules_ifs_openTable_Click(object sender, EventArgs e) {
+            IFSEditor f = new IFSEditor();
+            List<IFSFormula> newFormulas = f.ShowDialog(IfsFormulas);
+            if(newFormulas != null) {
+                IfsFormulas = newFormulas;
+            }
+        }
+
+        private void checkBox_drawAxes_CheckedChanged(object sender, EventArgs e) {
+            PreviewAxes();
+        }
         #endregion
 
         #region Generation controls
@@ -187,7 +266,7 @@ namespace ChaosGame {
 
         private void pictureBox_highlightColor_DoubleClick(object sender, EventArgs e) {
             ColorPicker c = new ColorPicker();
-            c.InitialColor = BitmapBgColor;
+            c.InitialColor = HighlightColor;
             HighlightColor = c.ShowDialog();
         }
         #endregion
@@ -238,14 +317,17 @@ namespace ChaosGame {
             }
         }
 
-        private void button1_Click(object sender, EventArgs e) {
-            gm.LoadOwo();
-            UpdateBitmap();
-        }
-
         private void button_ruleList_Click(object sender, EventArgs e) {
             RuleEditor r = new RuleEditor();
             r.ShowDialog(Rules);
+        }
+
+        private void numeric_ifsMagnifyX_ValueChanged(object sender, EventArgs e) {
+            if (LinkIfsMagnify) numeric_ifsMagnifyY.Value = numeric_ifsMagnifyX.Value;
+        }
+
+        private void numeric_ifsMagnifyY_ValueChanged(object sender, EventArgs e) {
+            if (LinkIfsMagnify) numeric_ifsMagnifyX.Value = numeric_ifsMagnifyY.Value;
         }
     }
 }

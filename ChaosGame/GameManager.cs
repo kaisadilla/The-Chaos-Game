@@ -5,7 +5,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using SWPoint = System.Windows.Point;
+using F_Point = System.Windows.Point;
 
 namespace ChaosGame {
     class GameManager {
@@ -51,11 +51,23 @@ namespace ChaosGame {
 
         //Rules variables:
         public List<Vertex> Vertices { get; private set; }
+        public bool DrawSides { get; private set; }
+        public Color SideColor { get; private set; }
         public Point Seed { get; private set; }
         public float CompressionRatio { get; private set; } //Todo: change to decimal IF it's not any slower.
         public float Rotation { get; private set; }
         public List<Rule> Rules { get; private set; }
         public int IterationsToIgnore { get; private set; }
+
+        //IFS variables:
+        public bool UseIfs { get; private set; }
+        public List<IFSFormula> IfsFormulas { get; private set; }
+        public float IfsMagnificationX { get; private set; }
+        public float IfsMagnificationY { get; private set; }
+        public Point CenterPoint { get; private set; }
+        public bool DrawAxes { get; private set; }
+        private float ifsWeight;
+        private F_Point lastIfsPoint;
 
         public GameManager() {
             Height = 700;
@@ -65,7 +77,7 @@ namespace ChaosGame {
             VertexSize = 15;
             VertexColor = Color.Red;
             KeepVerticesOnTop = true;
-
+             
             GpSize = 2;
             GpColor = Color.Black;
             Vertices = new List<Vertex>() {
@@ -73,10 +85,27 @@ namespace ChaosGame {
                 new Vertex(100, 600),
                 new Vertex(600, 600)
             };
+            DrawSides = false;
+            SideColor = Color.FromArgb(255, 192, 0);
+
+            UseIfs = false;
+
             CompressionRatio = 2.0f;
             Rotation = 0.0f;
             Rules = new List<Rule>();
             IterationsToIgnore = 0;
+        }
+
+        public void AssignVisualVariablesAndLoadImage(string filePath, int vertexSize, Color vertexColor, bool keepVerticesOnTop, int gpSize, Color gpColor) {
+            VertexSize = vertexSize;
+            VertexColor = vertexColor;
+            KeepVerticesOnTop = keepVerticesOnTop;
+            GpSize = gpSize;
+            GpColor = gpColor;
+
+            LoadImageFromFile(filePath);
+            Width = MemoryBitmap.Width;
+            Height = MemoryBitmap.Height;
         }
 
         public void AssignVisualVariables(int width, int height, Color bitmapBgColor, int vertexSize, Color vertexColor, bool keepVerticesOnTop, int gpSize, Color gpColor) {
@@ -93,8 +122,12 @@ namespace ChaosGame {
             GenerateBitmap();
         }
 
-        public void AssignRulesVariables(List<Vertex> vertices, float compressionRatio, float rotation, List<Rule> rules, int iterationsToIgnore) {
+        public void AssignRulesVariables(List<Vertex> vertices, bool drawSides, Color sidedColor, float compressionRatio, float rotation, List<Rule> rules, int iterationsToIgnore) {
+            UseIfs = false;
+
             Vertices = ReplicateList(vertices);
+            DrawSides = drawSides;
+            SideColor = sidedColor;
 
             CompressionRatio = compressionRatio;
             Rotation = rotation;
@@ -111,7 +144,19 @@ namespace ChaosGame {
             }
             vertexCache = new int[requiredCache + 1];
             for(int i = 0; i < vertexCache.Length; i++) vertexCache[i] = -1;
+        }
 
+        public void AssignIFSVariables(List<IFSFormula> ifsFormulas, Point centerPoint, float magnificationX, float magnificationY, bool drawAxes) {
+            UseIfs = true;
+            IfsFormulas = ReplicateList(ifsFormulas);
+            IfsMagnificationX = magnificationX;
+            IfsMagnificationY = magnificationY;
+            CenterPoint = centerPoint;
+            DrawAxes = drawAxes;
+            CalculateIFSWeight();
+            Vertices = null;
+
+            if (DrawAxes) DrawCoordinateAxes();
         }
 
         public void AssignSeed(Point seed) {
@@ -131,15 +176,25 @@ namespace ChaosGame {
         #endregion
 
         #region Public methods to interact with the game from an external class
-        public Bitmap GetPreviewBitmap(List<Vertex> vertices, float zoom) {
+        public Bitmap GetPreviewBitmap(List<Vertex> vertices, float zoom, bool drawSides, Color sideColor) {
             Bitmap previewBM = (Bitmap)MemoryBitmap.Clone();
-            foreach (Vertex v in vertices) {
-                DrawPoint(new Point(v.X, v.Y), VertexSize, VertexColor, previewBM);
-            }
+
+            DrawSides = drawSides;
+            SideColor = sideColor;
+            DrawVertices(vertices, previewBM);
+            return previewBM;
+        }
+
+        public Bitmap GetPreviewIFSBitmap(Point centerPoint, float zoom) {
+            Bitmap previewBM = (Bitmap)MemoryBitmap.Clone();
+            
+            DrawCoordinateAxes(centerPoint, previewBM);
             return previewBM;
         }
 
         public Point GetAutomaticSeed() {
+            if (UseIfs) return new Point(0, 0);
+
             RecalculateVerticesCompressionRatio();
             RecalculateVerticesRotation();
             TryGetNextPoint(Vertices[0].Point, 1, out Point nextPoint);
@@ -155,29 +210,33 @@ namespace ChaosGame {
             else {
                 IterationsToIgnore--;
             }
-            lastPoint = Seed;
+
+            if (!UseIfs) lastPoint = Seed;
+            else lastIfsPoint = new F_Point(Seed.X, Seed.Y);
         }
 
         public void DrawNextFrame(int iterations) => DrawNextFrame(iterations, false, Color.Transparent);
         public void DrawNextFrame(int iterations, bool highlightGeneration, Color highlightColor) {
-            //TODO: this first redraws the last point to be 'black', then draws n number of points obtained with DoNextIteration(), and finally, the last one, is drawn 'green'
-            //and the vertices are redrawn, if necessary.
             if (lastPoint != nullPoint && IterationsToIgnore == 0) {
                 DrawPoint(lastPoint, GpSize, GpColor);
             }
+            //ClearBitmap();
+            //foreach (Vertex v in Vertices) v.rotation += 1.0f;
 
             Vertex chosenVertex = null;
 
-            for(int i = 0; i < iterations; i++) {
-                lastPoint = DoNextIteration(out chosenVertex);
-                if(IterationsToIgnore == 0) {
+            for (int i = 0; i < iterations; i++) {
+                //Not using IFS ? Regular iteration : IFS iteration.
+                lastPoint = (!UseIfs) ? DoNextIteration(out chosenVertex) : DoNextIFSIteration();
+                if (IterationsToIgnore == 0) {
                     DrawPoint(lastPoint, GpSize, GpColor);
                 }
             }
             if(IterationsToIgnore == 0) {
                 if (highlightGeneration) DrawPoint(lastPoint, GpSize, highlightColor);
-                if (KeepVerticesOnTop) DrawVertices();
-                if (highlightGeneration) DrawPoint(chosenVertex.Point, VertexSize, highlightColor); //Warning: bug potential here.
+                if (KeepVerticesOnTop && !UseIfs) DrawVertices();
+                //This will crash if IFS is activated, so highlightGeneration should always be false when UseIfs is true.
+                if (highlightGeneration && !UseIfs) DrawPoint(chosenVertex.Point, VertexSize, highlightColor); //Warning: bug potential here.
             }
         }
         #endregion
@@ -231,6 +290,20 @@ namespace ChaosGame {
                 return DoNextIteration(out chosenVertex);
             }
         }
+        //In this case, "lastPoint" only tracks which pixels are being painted on the bitmap, but the actual point generated by the last iteration is saved in "lastIfsPoint".
+        private Point DoNextIFSIteration() {
+            int chosenIndex = GetChosenFormula((float)rng.NextDouble() * ifsWeight);
+            IFSFormula f = IfsFormulas[chosenIndex];
+            F_Point p = lastIfsPoint;
+            double realX = (f.a * p.X) + (f.b * p.Y) + f.e;
+            double realY = (f.c * p.X) + (f.d * p.Y) + f.f;
+            lastIfsPoint = new F_Point(realX, realY);
+
+            int x = (int)Math.Round(realX * IfsMagnificationX) + CenterPoint.X;
+            int y = - (int)Math.Round(realY * IfsMagnificationY) + CenterPoint.Y;
+
+            return new Point(x, y);
+        }
 
         private bool TryGetNextPoint(Point currentPoint, int vertexIndex, out Point nextPoint) {
             Vertex chosenVertex = Vertices[vertexIndex];
@@ -254,16 +327,33 @@ namespace ChaosGame {
         #endregion
 
         #region Methods to manage the bitmap
-        public void DrawVertices() {
-            foreach (Vertex v in Vertices) {
-                DrawPoint(v.Point, VertexSize, VertexColor);
+        public void DrawVertices() => DrawVertices(Vertices, MemoryBitmap);
+        public void DrawVertices(List<Vertex> vertices, Bitmap bitmap) {
+            if (DrawSides && vertices.Count >= 2) {
+                DrawLine(vertices[vertices.Count - 1].Point, vertices[0].Point, SideColor, bitmap);
+                for (int i = 0; i < vertices.Count - 1; i++) {
+                    DrawLine(vertices[i].Point, vertices[i + 1].Point, SideColor, bitmap);
+                }
             }
+            foreach (Vertex v in vertices) {
+                DrawPoint(v.Point, VertexSize, VertexColor, bitmap);
+            }
+            /*foreach (Vertex v in Vertices) {
+                DrawPoint(v.Point, VertexSize, VertexColor);
+            }*/
+        }
+
+        public void DrawCoordinateAxes() => DrawCoordinateAxes(CenterPoint, MemoryBitmap);
+        public void DrawCoordinateAxes(Point centerPoint, Bitmap bitmap) {
+            DrawLine(new Point(0, centerPoint.Y), new Point(Width, centerPoint.Y), Color.FromArgb(128, 0, 0, 0), bitmap);
+            //The vertical axis is done in two lines so it doesn't intercept the horizontal axis.
+            DrawLine(new Point(centerPoint.X, 0), new Point(centerPoint.X, centerPoint.Y - 1), Color.FromArgb(128, 0, 0, 0), bitmap);
+            DrawLine(new Point(centerPoint.X, centerPoint.Y + 1), new Point(centerPoint.X, Height), Color.FromArgb(128, 0, 0, 0), bitmap);
         }
         #endregion
 
         #region Methods that directly interact with the bitmap
         private void DrawPoint(Point point, int radius, Color color) => DrawPoint(point, radius, color, MemoryBitmap);
-
         private void DrawPoint(Point point, int radius, Color color, Bitmap bitmap) {
             SolidBrush brush = new SolidBrush(color);
 
@@ -275,6 +365,15 @@ namespace ChaosGame {
                     int radiusOffset = (int)(radius / 2f);
                     g.FillEllipse(brush, point.X - radiusOffset, point.Y - radiusOffset, radius, radius);
                 }
+            }
+        }
+
+        private void DrawLine(Point a, Point b, Color color) => DrawLine(a, b, color, MemoryBitmap);
+        private void DrawLine(Point a, Point b, Color color, Bitmap bitmap) {
+            Pen pen = new Pen(color);
+
+            using (Graphics g = Graphics.FromImage(bitmap)) {
+                g.DrawLine(pen, a, b);
             }
         }
         #endregion
@@ -316,18 +415,12 @@ namespace ChaosGame {
             }
         }
 
-        /*private void CalculateTotalWeight() {
-            if (totalWeight == -2) {
-                totalWeight = Vertices.Count;
-                checkWeight = false;
+        private void CalculateIFSWeight() {
+            ifsWeight = 0f;
+            foreach(IFSFormula f in IfsFormulas) {
+                ifsWeight += f.p;
             }
-            else {
-                totalWeight = 0;
-                foreach (Vertex v in Vertices) {
-                    totalWeight += v.weight;
-                }
-            }
-        }*/
+        }
 
         private int GetChosenIndex(int randomInt) {
             int accumulatedWeight = 0;
@@ -340,12 +433,22 @@ namespace ChaosGame {
             return chosenIndex;
         }
 
-        public void LoadOwo() {
-            //MemoryBitmap = new Bitmap(@"E:\owo.bmp");
-            MemoryBitmap = new Bitmap(MemoryBitmap.Height, MemoryBitmap.Width);
+        private int GetChosenFormula(float randomFloat) {
+            float accumulatedWeight = 0;
+            int chosenIndex = 0;
+            foreach(IFSFormula f in IfsFormulas) {
+                accumulatedWeight += f.p;
+                if (accumulatedWeight >= randomFloat) return chosenIndex;
+                else chosenIndex++;
+            }
+            return chosenIndex;
+        }
+
+        private void LoadImageFromFile(string filePath) {
+            Bitmap loadedImage = new Bitmap(filePath);
+            MemoryBitmap = new Bitmap(loadedImage.Width, loadedImage.Height);
             using (Graphics g = Graphics.FromImage(MemoryBitmap)) {
-                //SolidBrush b = new SolidBrush(Color.Black);
-                g.DrawImage(new Bitmap(@"E:\owo.bmp"), 0, 0);
+                g.DrawImage(loadedImage, 0, 0, loadedImage.Width, loadedImage.Height);
             }
         }
 
@@ -388,6 +491,15 @@ namespace ChaosGame {
             }
             return newList;
         }
+
+        public List<IFSFormula> ReplicateList(List<IFSFormula> originalList) {
+            List<IFSFormula> newList = new List<IFSFormula>();
+            foreach(IFSFormula f in originalList) {
+                IFSFormula formulaCopy = new IFSFormula(f.a, f.b, f.c, f.d, f.e, f.f, f.p);
+                newList.Add(formulaCopy);
+            }
+            return newList;
+        }
     }
 
     public class Vertex {
@@ -407,6 +519,20 @@ namespace ChaosGame {
 
         public Point Point {
             get => new Point(X, Y);
+        }
+    }
+
+    public struct IFSFormula {
+        public float a, b, c, d, e, f, p;
+
+        public IFSFormula(float a, float b, float c, float d, float e, float f, float p) {
+            this.a = a;
+            this.b = b;
+            this.c = c;
+            this.d = d;
+            this.e = e;
+            this.f = f;
+            this.p = p;
         }
     }
 

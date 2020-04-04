@@ -33,7 +33,7 @@ namespace ChaosGame {
          *** The index [0] is the most recent vertex. When a new vertex is added, all other
          * vertices are pushed one position backwards (from 0 to 1, etc). If the array is
          * of size 0, it will not store anything.*/
-        private int[] vertexCache = new int[5] { -1, -1, -1, -1, -1};
+        private int[] vertexCache;
         //private Vertex[] lastChosenVertices = null;
 
         //Visual variables:
@@ -55,6 +55,7 @@ namespace ChaosGame {
         public float CompressionRatio { get; private set; } //Todo: change to decimal IF it's not any slower.
         public float Rotation { get; private set; }
         public List<Rule> Rules { get; private set; }
+        public int IterationsToIgnore { get; private set; }
 
         public GameManager() {
             Height = 700;
@@ -75,6 +76,7 @@ namespace ChaosGame {
             CompressionRatio = 2.0f;
             Rotation = 0.0f;
             Rules = new List<Rule>();
+            IterationsToIgnore = 0;
         }
 
         public void AssignVisualVariables(int width, int height, Color bitmapBgColor, int vertexSize, Color vertexColor, bool keepVerticesOnTop, int gpSize, Color gpColor) {
@@ -91,18 +93,17 @@ namespace ChaosGame {
             GenerateBitmap();
         }
 
-        public void AssignRulesVariables(List<Vertex> vertices, float compressionRatio, float rotation, List<Rule> rules) {
+        public void AssignRulesVariables(List<Vertex> vertices, float compressionRatio, float rotation, List<Rule> rules, int iterationsToIgnore) {
             Vertices = ReplicateList(vertices);
 
             CompressionRatio = compressionRatio;
             Rotation = rotation;
             Rules = rules;
+            IterationsToIgnore = iterationsToIgnore;
             //Assign the correct compression, rotation and weight to each individual vertex based on their values.
             RecalculateVerticesCompressionRatio();
             RecalculateVerticesRotation();
             RecalculateVerticesWeight();
-            Rules = new List<Rule> { Rule.GetCheckVerticesRule(0, 1, 1), Rule.GetCheckVerticesRule(0, 1, -1) };
-            //Rules = new List<Rule> { Rule.GetCheckVerticesRule(0, 0, 0) };
 
             int requiredCache = 0;
             foreach(Rule r in Rules) {
@@ -141,14 +142,19 @@ namespace ChaosGame {
         public Point GetAutomaticSeed() {
             RecalculateVerticesCompressionRatio();
             RecalculateVerticesRotation();
-            TryGetNextPoint(Vertices[0].Point, Vertices[1], out Point nextPoint);
+            TryGetNextPoint(Vertices[0].Point, 1, out Point nextPoint);
             return nextPoint;
         }
         //At this moment, there is no option to highlight the seed, so the method with no parameters is the only one used by the form.
         public void DrawSeed() => DrawSeed(false, Color.Transparent);
         public void DrawSeed(bool highlightGeneration, Color highlightColor) {
             Color color = (highlightGeneration) ? highlightColor : GpColor;
-            DrawPoint(Seed, GpSize, GpColor);
+            if (IterationsToIgnore == 0) {
+                DrawPoint(Seed, GpSize, GpColor);
+            }
+            else {
+                IterationsToIgnore--;
+            }
             lastPoint = Seed;
         }
 
@@ -156,7 +162,7 @@ namespace ChaosGame {
         public void DrawNextFrame(int iterations, bool highlightGeneration, Color highlightColor) {
             //TODO: this first redraws the last point to be 'black', then draws n number of points obtained with DoNextIteration(), and finally, the last one, is drawn 'green'
             //and the vertices are redrawn, if necessary.
-            if (lastPoint != nullPoint) {
+            if (lastPoint != nullPoint && IterationsToIgnore == 0) {
                 DrawPoint(lastPoint, GpSize, GpColor);
             }
 
@@ -164,12 +170,15 @@ namespace ChaosGame {
 
             for(int i = 0; i < iterations; i++) {
                 lastPoint = DoNextIteration(out chosenVertex);
-                DrawPoint(lastPoint, GpSize, GpColor);
+                if(IterationsToIgnore == 0) {
+                    DrawPoint(lastPoint, GpSize, GpColor);
+                }
             }
-            
-            if (highlightGeneration) DrawPoint(lastPoint, GpSize, highlightColor);
-            if (KeepVerticesOnTop) DrawVertices();
-            if (highlightGeneration) DrawPoint(chosenVertex.Point, VertexSize, highlightColor); //Warning: bug potential here.
+            if(IterationsToIgnore == 0) {
+                if (highlightGeneration) DrawPoint(lastPoint, GpSize, highlightColor);
+                if (KeepVerticesOnTop) DrawVertices();
+                if (highlightGeneration) DrawPoint(chosenVertex.Point, VertexSize, highlightColor); //Warning: bug potential here.
+            }
         }
         #endregion
 
@@ -213,7 +222,9 @@ namespace ChaosGame {
                 vertexCache[0] = chosenIndex;
             }
 
-            if(TryGetNextPoint(lastPoint, chosenVertex, out Point nextPoint)) {
+            if(IterationsToIgnore > 0) IterationsToIgnore--;
+
+            if (TryGetNextPoint(lastPoint, chosenIndex, out Point nextPoint)) {
                 return nextPoint;
             }
             else {
@@ -221,15 +232,18 @@ namespace ChaosGame {
             }
         }
 
-        private bool TryGetNextPoint(Point currentPoint, Vertex chosenVertex, out Point nextPoint) {
+        private bool TryGetNextPoint(Point currentPoint, int vertexIndex, out Point nextPoint) {
+            Vertex chosenVertex = Vertices[vertexIndex];
             int x = (int)ExtraMath.MiddleValueByCompression(currentPoint.X, chosenVertex.X, chosenVertex.compressionRatio);
             int y = (int)ExtraMath.MiddleValueByCompression(currentPoint.Y, chosenVertex.Y, chosenVertex.compressionRatio);
 
             nextPoint = new Point(x, y);
-            nextPoint = ExtraMath.RotatePointAroundOrigin(nextPoint, chosenVertex.Point, chosenVertex.rotation);
 
-            //Point middlePoint = new Point(350, 225);
-            //nextPoint = ExtraMath.RotatePointAroundOrigin(nextPoint, middlePoint, chosenVertex.rotation);
+            Point rotationCenter = chosenVertex.Point;
+            foreach (Rule r in Rules) {
+                rotationCenter = r.AlterCenterOfRotation(vertexIndex, chosenVertex.Point);
+            }
+            nextPoint = ExtraMath.RotatePointAroundOrigin(nextPoint, rotationCenter, chosenVertex.rotation);
 
             foreach(Rule r in Rules) {
                 return r.IsPointValid(nextPoint, MemoryBitmap);
@@ -396,21 +410,38 @@ namespace ChaosGame {
         }
     }
 
-    public class Rule {
-        //Last vertices from [m] (most recent) to [n] (oldest) were the same. And this one is at distance [distance] from that vertex.
-        private bool checkOldVertices;
-        private int m, n, distance;
-        private bool notAllowColor;
-        private Color color;
+    //I'm sure this is a terrible implementation.
+    public abstract class Rule {
+        public string RuleName { get; private set; }
 
-        public int RequiredVertexCache {
-            get {
-                return n;
-            }
+        public virtual int RequiredVertexCache {
+            get => 0;
         }
 
-        public bool IsVertexValid(int index, int totalVertices, int[] cache) {
-            if (!checkOldVertices) return true;
+        public Rule(string name) {
+            RuleName = name;
+        }
+
+        public virtual bool IsVertexValid(int index, int totalVertices, int[] cache) => true;
+        public virtual bool IsPointValid(Point point, Bitmap bitmap) => true;
+        public virtual Point AlterCenterOfRotation(int index, Point center) => center;
+    }
+
+    //Last vertices from [m] (most recent) to [n] (oldest) were the same. And this one is at distance [distance] from that vertex.
+    public class Rule_CheckVertices : Rule {
+        public readonly int m, n, distance;
+
+        public override int RequiredVertexCache {
+            get => n;
+        }
+
+        public Rule_CheckVertices(string name, int m, int n, int distance) : base(name) {
+            this.m = m;
+            this.n = n;
+            this.distance = distance;
+        }
+
+        public override bool IsVertexValid(int index, int totalVertices, int[] cache) {
             if (cache[n] == -1) return true;
             //Check if last vertices from m to n were the same.
             for (int i = m; i < n; i++) {
@@ -425,20 +456,35 @@ namespace ChaosGame {
             if (modifiedIndex == cache[0]) return false;
             return true;
         }
+    }
+    //The new point cannot land on a point that is of a specific color in the bitmap.
+    public class Rule_BanColor : Rule {
+        public readonly Color color;
 
-        public bool IsPointValid(Point point, Bitmap bitmap) {
-            if (!notAllowColor) return true;
+        public Rule_BanColor(string name, Color color) : base(name) {
+            this.color = color;
+        }
+
+        public override bool IsPointValid(Point point, Bitmap bitmap) {
             if (bitmap.GetPixel(point.X, point.Y).ToArgb() == color.ToArgb()) {
                 return false;
             }
             return true;
         }
+    }
+    //Add +x, +y to the center of rotation of vertex n.
+    public class Rule_AlterRotationCenter : Rule {
+        public readonly int x, y, affectedVertex;
 
-        public static Rule GetCheckVerticesRule(int m, int n, int distance) {
-            return new Rule { checkOldVertices = true, m = m, n = n, distance = distance };
+        public Rule_AlterRotationCenter(string name, int affectedVertex, int x, int y) : base(name) {
+            this.affectedVertex = affectedVertex;
+            this.x = x;
+            this.y = y;
         }
-        public static Rule GetBannedColorRule(Color color) {
-            return new Rule { notAllowColor = true, color = color };
+
+        public override Point AlterCenterOfRotation(int index, Point center) {
+            if (index != affectedVertex) return center;
+            return new Point(center.X + x, center.Y + y);
         }
     }
 }

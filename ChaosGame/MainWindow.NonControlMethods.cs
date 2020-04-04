@@ -49,6 +49,7 @@ namespace ChaosGame {
             CompressionRatio = gm.CompressionRatio;
             Rotation = gm.Rotation;
             Rules = gm.Rules;
+            IterationsToIgnore = gm.IterationsToIgnore;
 
             //Seed = gm.GetAutomaticSeed();
         }
@@ -90,7 +91,7 @@ namespace ChaosGame {
             get => pictureBox_bgColor.BackColor;
             set {
                 pictureBox_bgColor.BackColor = value;
-                label_bgColorVal.Text = "#" + value.R.ToString("X2") + value.G.ToString("X2") + value.B.ToString("X2") + value.A.ToString("X2");
+                label_bgColorVal.Text = value.HexValue();
             }
         }
 
@@ -103,7 +104,7 @@ namespace ChaosGame {
             get => pictureBox_ipColor.BackColor;
             set {
                 pictureBox_ipColor.BackColor = value;
-                label_ipColorVal.Text = "#" + value.R.ToString("X2") + value.G.ToString("X2") + value.B.ToString("X2") + value.A.ToString("X2");
+                label_ipColorVal.Text = value.HexValue();
             }
         }
 
@@ -121,7 +122,7 @@ namespace ChaosGame {
             get => pictureBox_gpColor.BackColor;
             set {
                 pictureBox_gpColor.BackColor = value;
-                label_gpColorVal.Text = "#" + value.R.ToString("X2") + value.G.ToString("X2") + value.B.ToString("X2") + value.A.ToString("X2");
+                label_gpColorVal.Text = value.HexValue();
             }
         }
 
@@ -238,7 +239,7 @@ namespace ChaosGame {
             get => pictureBox_highlightColor.BackColor;
             set {
                 pictureBox_highlightColor.BackColor = value;
-                label_highlightVal.Text = "#" + value.R.ToString("X2") + value.G.ToString("X2") + value.B.ToString("X2") + value.A.ToString("X2");
+                label_highlightVal.Text = value.HexValue();
             }
         }
 
@@ -261,6 +262,11 @@ namespace ChaosGame {
         private bool UseAutomaticSeed {
             get => checkBox_autoSeed.Checked;
             set => checkBox_autoSeed.Checked = value;
+        }
+
+        private int IterationsToIgnore {
+            get => (int)numeric_ignoreIterationsVal.Value;
+            set => numeric_ignoreIterationsVal.Value = value;
         }
     }
 }

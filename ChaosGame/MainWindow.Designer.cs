@@ -99,6 +99,8 @@
             this.panel_bitmap = new System.Windows.Forms.Panel();
             this.pictureBox_bitmap = new System.Windows.Forms.PictureBox();
             this.timer_gpGeneration = new System.Windows.Forms.Timer(this.components);
+            this.numeric_ignoreIterationsVal = new System.Windows.Forms.NumericUpDown();
+            this.label_ignoreIterations = new System.Windows.Forms.Label();
             this.layout_table.SuspendLayout();
             this.layout_optionPanels.SuspendLayout();
             this.groupBox_visualOptions.SuspendLayout();
@@ -127,6 +129,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.numeric_zoom)).BeginInit();
             this.panel_bitmap.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox_bitmap)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numeric_ignoreIterationsVal)).BeginInit();
             this.SuspendLayout();
             // 
             // layout_table
@@ -467,6 +470,8 @@
             // 
             // groupBox_rules
             // 
+            this.groupBox_rules.Controls.Add(this.numeric_ignoreIterationsVal);
+            this.groupBox_rules.Controls.Add(this.label_ignoreIterations);
             this.groupBox_rules.Controls.Add(this.button_clearRules);
             this.groupBox_rules.Controls.Add(this.button_clearVertices);
             this.groupBox_rules.Controls.Add(this.checkBox_addVertexOnClick);
@@ -488,7 +493,7 @@
             this.groupBox_rules.Controls.Add(this.checkBox_autoSeed);
             this.groupBox_rules.Location = new System.Drawing.Point(13, 311);
             this.groupBox_rules.Name = "groupBox_rules";
-            this.groupBox_rules.Size = new System.Drawing.Size(250, 232);
+            this.groupBox_rules.Size = new System.Drawing.Size(250, 260);
             this.groupBox_rules.TabIndex = 103;
             this.groupBox_rules.TabStop = false;
             this.groupBox_rules.Text = "Rules";
@@ -527,7 +532,7 @@
             // 
             // button_ApplyRulesOptions
             // 
-            this.button_ApplyRulesOptions.Location = new System.Drawing.Point(170, 203);
+            this.button_ApplyRulesOptions.Location = new System.Drawing.Point(171, 231);
             this.button_ApplyRulesOptions.Name = "button_ApplyRulesOptions";
             this.button_ApplyRulesOptions.Size = new System.Drawing.Size(75, 23);
             this.button_ApplyRulesOptions.TabIndex = 107;
@@ -543,6 +548,7 @@
             this.button_ruleList.TabIndex = 106;
             this.button_ruleList.Text = "List of rules";
             this.button_ruleList.UseVisualStyleBackColor = true;
+            this.button_ruleList.Click += new System.EventHandler(this.button_ruleList_Click);
             // 
             // label_gpFirstY
             // 
@@ -731,7 +737,7 @@
             this.groupBox_generation.Controls.Add(this.button_nextIteration);
             this.groupBox_generation.Controls.Add(this.numeric_time);
             this.groupBox_generation.Controls.Add(this.numeric_iterations);
-            this.groupBox_generation.Location = new System.Drawing.Point(13, 549);
+            this.groupBox_generation.Location = new System.Drawing.Point(13, 577);
             this.groupBox_generation.Name = "groupBox_generation";
             this.groupBox_generation.Size = new System.Drawing.Size(250, 178);
             this.groupBox_generation.TabIndex = 4;
@@ -891,7 +897,7 @@
             // 
             this.groupBox_rules2.Controls.Add(this.button_saveBitmap);
             this.groupBox_rules2.Controls.Add(this.groupBox_restrictions);
-            this.groupBox_rules2.Location = new System.Drawing.Point(13, 733);
+            this.groupBox_rules2.Location = new System.Drawing.Point(13, 761);
             this.groupBox_rules2.Name = "groupBox_rules2";
             this.groupBox_rules2.Size = new System.Drawing.Size(250, 204);
             this.groupBox_rules2.TabIndex = 5;
@@ -1062,6 +1068,28 @@
             this.timer_gpGeneration.Interval = 2;
             this.timer_gpGeneration.Tick += new System.EventHandler(this.timer_gpGeneration_Tick);
             // 
+            // numeric_ignoreIterationsVal
+            // 
+            this.numeric_ignoreIterationsVal.Location = new System.Drawing.Point(81, 205);
+            this.numeric_ignoreIterationsVal.Maximum = new decimal(new int[] {
+            10000,
+            0,
+            0,
+            0});
+            this.numeric_ignoreIterationsVal.Name = "numeric_ignoreIterationsVal";
+            this.numeric_ignoreIterationsVal.Size = new System.Drawing.Size(55, 20);
+            this.numeric_ignoreIterationsVal.TabIndex = 108;
+            this.numeric_ignoreIterationsVal.ThousandsSeparator = true;
+            // 
+            // label_ignoreIterations
+            // 
+            this.label_ignoreIterations.AutoSize = true;
+            this.label_ignoreIterations.Location = new System.Drawing.Point(6, 206);
+            this.label_ignoreIterations.Name = "label_ignoreIterations";
+            this.label_ignoreIterations.Size = new System.Drawing.Size(185, 13);
+            this.label_ignoreIterations.TabIndex = 109;
+            this.label_ignoreIterations.Text = "Ignore the first                      iterations.";
+            // 
             // MainWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -1105,6 +1133,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.numeric_zoom)).EndInit();
             this.panel_bitmap.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox_bitmap)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numeric_ignoreIterationsVal)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -1186,6 +1215,8 @@
         private System.Windows.Forms.Button button_clearRules;
         private System.Windows.Forms.Button button_clearVertices;
         private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.NumericUpDown numeric_ignoreIterationsVal;
+        private System.Windows.Forms.Label label_ignoreIterations;
     }
 }
 

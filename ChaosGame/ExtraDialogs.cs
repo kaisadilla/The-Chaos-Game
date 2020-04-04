@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using sdr = System.Drawing;
 using HSVColor = System.Tuple<double, double, double>;
 using ChaosGame;
+using CGNamespaces.ExtraFunctions;
+using System.IO;
 
 namespace System.Windows.Forms.ExtraDialogs {
     public class VertexEditor {
@@ -380,6 +382,579 @@ namespace System.Windows.Forms.ExtraDialogs {
             }
 
             row.ErrorText = "";
+        }
+    }
+
+    public class RuleEditor {
+        #region Components of the dialog
+        private Form dialog = new Form() {
+            ClientSize = new Drawing.Size(250, 336),
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            Text = "List of points",
+            StartPosition = FormStartPosition.CenterScreen,
+            MaximizeBox = false,
+            MinimizeBox = false
+        };
+
+        private Label label_rules = new Label() {
+            Left = 10,
+            Top = 10,
+            AutoSize = true,
+            Text = "Current rules:"
+        };
+        
+        private ListBox listBox_rules = new ListBox() {
+            Left = 10,
+            Top = 30,
+            Width = 230,
+            Height = 250,
+            HorizontalScrollbar = true
+        };
+
+        private Button button_add = new Button() {
+            Left = 10,
+            Top = 275,
+            Width = 55,
+            Text = "Add"
+        };
+
+        private Button button_remove = new Button() {
+            Left = 70,
+            Top = 275,
+            Width = 55,
+            Text = "Remove"
+        };
+
+        private Button button_clear = new Button() {
+            Left = 130,
+            Top = 275,
+            Width = 50,
+            Text = "Clear"
+        };
+
+        private Button button_up = new Button() {
+            Left = 185,
+            Top = 275,
+            Width = 25,
+            Text = "+"
+        };
+
+        private Button button_down = new Button() {
+            Left = 215,
+            Top = 275,
+            Width = 25,
+            Text = "-"
+        };
+
+        private Button button_ok = new Button() {
+            Left = 165,
+            Top = 303,
+            Width = 75,
+            Text = "OK",
+            DialogResult = DialogResult.OK
+        };
+        #endregion
+
+        private List<Rule> currentRuleList;
+        /*private List<Rule> CurrentRuleList {
+            get {
+                return currentRuleList;
+            }
+        }*/
+
+        public List<Rule> ShowDialog(List<Rule> ruleList) {
+            currentRuleList = ruleList;
+            UpdateRuleList();
+
+            button_add.Click += (sender, e) => {
+                AddRuleDialog a = new AddRuleDialog();
+                Rule newRule = a.ShowDialog();
+
+                if (newRule == null) return;
+
+                currentRuleList.Add(newRule);
+                UpdateRuleList();
+            };
+
+            button_remove.Click += (sender, e) => {
+                int index = listBox_rules.SelectedIndex;
+                if (index == -1) return;
+                currentRuleList.RemoveAt(index);
+                UpdateRuleList();
+
+                if (index >= listBox_rules.Items.Count) {
+                    listBox_rules.SelectedIndex = listBox_rules.Items.Count - 1;
+                }
+                else {
+                    listBox_rules.SelectedIndex = index;
+                }
+            };
+            button_clear.Click += (sender, e) => {
+                if (listBox_rules.Items.Count == 0) return;
+                DialogResult result = MessageBox.Show("Are you sure you want to clear the list?", "Clear vertices", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                if (result == DialogResult.Yes) {
+                    currentRuleList.Clear();
+                    UpdateRuleList();
+                }
+            };
+
+            button_up.Click += (sender, e) => {
+                int index = listBox_rules.SelectedIndex;
+                if (index < 1) return;
+
+                Rule ruleBeingMoved = currentRuleList[index];
+                currentRuleList[index] = currentRuleList[index - 1];
+                currentRuleList[index - 1] = ruleBeingMoved;
+                UpdateRuleList();
+                listBox_rules.SelectedIndex = index - 1;
+            };
+
+            button_down.Click += (sender, e) => {
+                int index = listBox_rules.SelectedIndex;
+                if (index > listBox_rules.Items.Count - 2) return;
+
+                Rule ruleBeingMoved = currentRuleList[index];
+                currentRuleList[index] = currentRuleList[index + 1];
+                currentRuleList[index + 1] = ruleBeingMoved;
+                UpdateRuleList();
+                listBox_rules.SelectedIndex = index + 1;
+            };
+
+            dialog.Controls.Add(label_rules);
+            dialog.Controls.Add(listBox_rules);
+            dialog.Controls.Add(button_remove);
+            dialog.Controls.Add(button_clear);
+            dialog.Controls.Add(button_up);
+            dialog.Controls.Add(button_down);
+            dialog.Controls.Add(button_add);
+            dialog.Controls.Add(button_ok);
+
+            //TODO: Not implemented. Right now any changes to the ruleList are changed instantly, and there's no way to undo them.
+            return dialog.ShowDialog() == DialogResult.OK ? ruleList : null;
+        }
+
+        private void UpdateRuleList() {
+            listBox_rules.Items.Clear();
+            foreach (Rule r in currentRuleList) {
+                listBox_rules.Items.Add(r.RuleName);
+            }
+        }
+    }
+
+    class AddRuleDialog {
+        #region Components of the dialog
+        private Form dialog = new Form() {
+            ClientSize = new sdr::Size(539, 308),
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            Text = "List of points",
+            StartPosition = FormStartPosition.CenterScreen,
+            MaximizeBox = false,
+            MinimizeBox = false
+        };
+
+        private Label label_presetRules = new Label() {
+            Left = 10,
+            Top = 10,
+            AutoSize = true,
+            Text = "Preset rules:"
+        };
+
+        private ListBox listBox_presetRules = new ListBox() {
+            Left = 10,
+            Top = 30,
+            Width = 175,
+            Height = 250,
+            HorizontalScrollbar = true
+        };
+
+        private Button button_openPresetFolder = new Button() {
+            Left = 10,
+            Top = 275,
+            Width = 125,
+            Text = "Open preset folder"
+        };
+
+        private Button button_savePreset = new Button() {
+            Left = 195,
+            Top = 275,
+            Width = 100,
+            Text = "Save preset"
+        };
+
+        private Button button_ok = new Button() {
+            Left = 453,
+            Top = 275,
+            Width = 75,
+            Text = "OK",
+            DialogResult = DialogResult.OK
+        };
+
+        private Label label_name = new Label() {
+            Left = 195,
+            Top = 33,
+            Width = 45,
+            Text = "Name: "
+        };
+
+        private TextBox textBox_name = new TextBox() {
+            Left = 240,
+            Top = 30,
+            Width = 290,
+            Text = "New rule"
+        };
+
+        private TabControl tabControl_rules = new TabControl() {
+            Left = 195,
+            Top = 56,
+            Width = 335,
+            Height = 213
+        };
+
+        private Label label_rule1 = new Label() {
+            Left = 5,
+            Top = 5,
+            Width = 325,
+            Height = 40,
+            Text = "If last vertices from [m] to [n] were the same, the current one can't be at distance [o] from that vertex."
+        };
+
+        private Label label_rule1_m = new Label() {
+            Left = 5,
+            Top = 47,
+            Width = 20,
+            Text = "m:"
+        };
+
+        private NumericUpDown numeric_rule1_m = new NumericUpDown() {
+            Left = 25,
+            Top = 45,
+            Width = 50,
+            Value = 0,
+            Minimum = 0,
+            Maximum = 1000,
+            Increment = 1
+        };
+
+        private Label label_rule1_n = new Label() {
+            Left = 5,
+            Top = 72,
+            Width = 20,
+            Text = "n:"
+        };
+
+        private NumericUpDown numeric_rule1_n = new NumericUpDown() {
+            Left = 25,
+            Top = 70,
+            Width = 50,
+            Value = 0,
+            Minimum = 0,
+            Maximum = 1000,
+            Increment = 1
+        };
+
+        private Label label_rule1_o = new Label() {
+            Left = 5,
+            Top = 97,
+            Width = 20,
+            Text = "o:"
+        };
+
+        private NumericUpDown numeric_rule1_o = new NumericUpDown() {
+            Left = 25,
+            Top = 95,
+            Width = 50,
+            Value = 0,
+            Minimum = -1000,
+            Maximum = 1000,
+            Increment = 1
+        };
+
+        private Label label_rule2 = new Label() {
+            Left = 5,
+            Top = 5,
+            Width = 325,
+            Height = 40,
+            Text = "If the chosen point is in a point of color [c], another point is chosen."
+        };
+
+        private Label label_rule2_c = new Label() {
+            Left = 5,
+            Top = 47,
+            Width = 20,
+            Text = "c:"
+        };
+
+        private PictureBox pictureBox_rule2_c = new PictureBox() {
+            Left = 25,
+            Top = 45,
+            Width = 50,
+            Height = 20,
+            BorderStyle = BorderStyle.FixedSingle,
+            BackColor = sdr::Color.Black
+        };
+
+        private Label label_rule2_cHexVal = new Label() {
+            Left = 80,
+            Top = 47,
+            AutoSize = true,
+            Text = "#000000FF"
+        };
+
+        private Label label_rule3 = new Label() {
+            Left = 5,
+            Top = 5,
+            Width = 325,
+            Height = 40,
+            Text = "For vertex at index [i], move the center of rotation by [x], [y]."
+        };
+
+        private Label label_rule3_i = new Label() {
+            Left = 5,
+            Top = 47,
+            Width = 20,
+            Text = "i:"
+        };
+
+        private NumericUpDown numeric_rule3_i = new NumericUpDown() {
+            Left = 25,
+            Top = 45,
+            Width = 50,
+            Value = 0,
+            Minimum = 0,
+            Maximum = 1000000,
+            Increment = 1
+        };
+
+        private Label label_rule3_x = new Label() {
+            Left = 5,
+            Top = 72,
+            Width = 20,
+            Text = "x:"
+        };
+
+        private NumericUpDown numeric_rule3_x = new NumericUpDown() {
+            Left = 25,
+            Top = 70,
+            Width = 50,
+            Value = 0,
+            Minimum = -100000,
+            Maximum = 100000,
+            Increment = 1
+        };
+
+        private Label label_rule3_y = new Label() {
+            Left = 5,
+            Top = 97,
+            Width = 20,
+            Text = "y:"
+        };
+
+        private NumericUpDown numeric_rule3_y = new NumericUpDown() {
+            Left = 25,
+            Top = 95,
+            Width = 50,
+            Value = 0,
+            Minimum = -100000,
+            Maximum = 100000,
+            Increment = 1
+        };
+
+        #endregion
+
+        List<Rule> presetRules;
+
+        public Rule ShowDialog() {
+            listBox_presetRules.SelectedIndexChanged += (sender, e) => {
+                int index = listBox_presetRules.SelectedIndex;
+                if (index == -1) return;
+                Rule rule = presetRules[index];
+                textBox_name.Text = rule.RuleName;
+                if (rule is Rule_CheckVertices) {
+                    Rule_CheckVertices castedRule = (Rule_CheckVertices)rule;
+                    tabControl_rules.SelectTab(0);
+                    numeric_rule1_m.Value = castedRule.m;
+                    numeric_rule1_n.Value = castedRule.n;
+                    numeric_rule1_o.Value = castedRule.distance;
+                }
+                else if (rule is Rule_BanColor) {
+                    Rule_BanColor castedRule = (Rule_BanColor)rule;
+                    tabControl_rules.SelectTab(1);
+                    pictureBox_rule2_c.BackColor = castedRule.color;
+                    label_rule2_cHexVal.Text = pictureBox_rule2_c.BackColor.HexValue();
+                }
+                if (rule is Rule_AlterRotationCenter) {
+                    Rule_AlterRotationCenter castedRule = (Rule_AlterRotationCenter)rule;
+                    tabControl_rules.SelectTab(2);
+                    numeric_rule3_i.Value = castedRule.affectedVertex;
+                    numeric_rule3_x.Value = castedRule.x;
+                    numeric_rule3_y.Value = castedRule.y;
+                }
+            };
+
+            button_savePreset.Click += (sender, e) => {
+                SaveFileDialog s = new SaveFileDialog() {
+                    RestoreDirectory = false,
+                    InitialDirectory = @".\res\rule_presets",
+                    Filter = "TOML file (*.toml)|*.toml"
+                };
+                s.ShowDialog();
+                string path = s.FileName;
+
+                using(StreamWriter outputFile = new StreamWriter(path)) {
+                    switch (tabControl_rules.SelectedIndex) {
+                        case 0:
+                            outputFile.WriteLine("RuleType = 0");
+                            outputFile.WriteLine("RuleName = " + textBox_name.Text);
+                            outputFile.WriteLine("m = " + (int)numeric_rule1_m.Value);
+                            outputFile.WriteLine("n = " + (int)numeric_rule1_n.Value);
+                            outputFile.WriteLine("o = " + (int)numeric_rule1_o.Value);
+                            break;
+                        case 1:
+                            outputFile.WriteLine("RuleType = 1");
+                            outputFile.WriteLine("RuleName = " + textBox_name.Text);
+                            outputFile.WriteLine("r = " + pictureBox_rule2_c.BackColor.R);
+                            outputFile.WriteLine("g = " + pictureBox_rule2_c.BackColor.G);
+                            outputFile.WriteLine("b = " + pictureBox_rule2_c.BackColor.B);
+                            outputFile.WriteLine("a = " + pictureBox_rule2_c.BackColor.A);
+                            break;
+                        case 2:
+                            outputFile.WriteLine("RuleType = 3");
+                            outputFile.WriteLine("RuleName = " + textBox_name.Text);
+                            outputFile.WriteLine("i = " + (int)numeric_rule3_i.Value);
+                            outputFile.WriteLine("x = " + (int)numeric_rule3_x.Value);
+                            outputFile.WriteLine("y = " + (int)numeric_rule3_y.Value);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
+            };
+
+            button_openPresetFolder.Click += (sender, e) => {
+                System.Diagnostics.Process.Start("explorer.exe", @".\res\rule_presets");
+            };
+
+            numeric_rule1_m.ValueChanged += (sender, e) => {
+                numeric_rule1_n.Minimum = numeric_rule1_m.Value;
+            };
+
+            pictureBox_rule2_c.DoubleClick += (sender, e) => {
+                ColorPicker c = new ColorPicker() {
+                    InitialColor = pictureBox_rule2_c.BackColor
+                };
+                pictureBox_rule2_c.BackColor = c.ShowDialog();
+                label_rule2_cHexVal.Text = pictureBox_rule2_c.BackColor.HexValue();
+            };
+
+            dialog.Controls.Add(label_presetRules);
+            dialog.Controls.Add(listBox_presetRules);
+            dialog.Controls.Add(button_openPresetFolder);
+            dialog.Controls.Add(button_savePreset);
+            dialog.Controls.Add(button_ok);
+            dialog.Controls.Add(label_name);
+            dialog.Controls.Add(textBox_name);
+            dialog.Controls.Add(tabControl_rules);
+
+            tabControl_rules.TabPages.Add("Rule 1");
+            tabControl_rules.TabPages[0].Controls.Add(label_rule1);
+            tabControl_rules.TabPages[0].Controls.Add(label_rule1_m);
+            tabControl_rules.TabPages[0].Controls.Add(numeric_rule1_m);
+            tabControl_rules.TabPages[0].Controls.Add(label_rule1_n);
+            tabControl_rules.TabPages[0].Controls.Add(numeric_rule1_n);
+            tabControl_rules.TabPages[0].Controls.Add(label_rule1_o);
+            tabControl_rules.TabPages[0].Controls.Add(numeric_rule1_o);
+            tabControl_rules.TabPages.Add("Rule 2");
+            tabControl_rules.TabPages[1].Controls.Add(label_rule2);
+            tabControl_rules.TabPages[1].Controls.Add(label_rule2_c);
+            tabControl_rules.TabPages[1].Controls.Add(pictureBox_rule2_c);
+            tabControl_rules.TabPages[1].Controls.Add(label_rule2_cHexVal);
+            tabControl_rules.TabPages.Add("Rule 3");
+            tabControl_rules.TabPages[2].Controls.Add(label_rule3);
+            tabControl_rules.TabPages[2].Controls.Add(label_rule3_i);
+            tabControl_rules.TabPages[2].Controls.Add(numeric_rule3_i);
+            tabControl_rules.TabPages[2].Controls.Add(label_rule3_x);
+            tabControl_rules.TabPages[2].Controls.Add(numeric_rule3_x);
+            tabControl_rules.TabPages[2].Controls.Add(label_rule3_y);
+            tabControl_rules.TabPages[2].Controls.Add(numeric_rule3_y);
+
+            presetRules = LoadPresets();
+            foreach(Rule r in presetRules) {
+                listBox_presetRules.Items.Add(r.RuleName);
+            }
+
+            DialogResult result = dialog.ShowDialog();
+
+            if(result == DialogResult.OK) {
+                string ruleName = textBox_name.Text;
+                switch (tabControl_rules.SelectedIndex) {
+                    case 0:
+                        int m = (int)numeric_rule1_m.Value;
+                        int n = (int)numeric_rule1_n.Value;
+                        int o = (int)numeric_rule1_o.Value;
+                        return new Rule_CheckVertices(ruleName, m, n, o);
+                    case 1:
+                        sdr::Color color = pictureBox_rule2_c.BackColor;
+                        return new Rule_BanColor(ruleName, color);
+                    case 2:
+                        int i = (int)numeric_rule3_i.Value;
+                        int x = (int)numeric_rule3_x.Value;
+                        int y = (int)numeric_rule3_y.Value;
+                        return new Rule_AlterRotationCenter(ruleName, i, x, y);
+                    default:
+                        return null;
+                }
+            }
+            else {
+                return null;
+            }
+        }
+
+        private List<Rule> LoadPresets() {
+            string[] presetPaths = Directory.GetFiles(@".\res\rule_presets");
+            List<Rule> presetRules = new List<Rule>();
+            foreach(string preset in presetPaths) {
+                if (Path.GetExtension(preset) != ".toml") continue;
+                string[] content = File.ReadAllLines(preset);
+                if(int.TryParse(content[0].Split('=')[1].Trim(), out int ruleNumber)) {
+                    switch(ruleNumber) {
+                        case 0:
+                            if (int.TryParse(content[2].Split('=')[1].Trim(), out int m) &&
+                                int.TryParse(content[3].Split('=')[1].Trim(), out int n) &&
+                                int.TryParse(content[4].Split('=')[1].Trim(), out int o)
+                                ) {
+                                if (m > n) continue;
+                                string ruleName = content[1].Split('=')[1].Trim().Trim('"');
+                                var parsedRule = new Rule_CheckVertices(ruleName, m, n, o);
+                                presetRules.Add(parsedRule);
+                            }
+                            break;
+                        case 1:
+                            if (int.TryParse(content[2].Split('=')[1].Trim(), out int r) &&
+                                int.TryParse(content[3].Split('=')[1].Trim(), out int g) &&
+                                int.TryParse(content[4].Split('=')[1].Trim(), out int b) &&
+                                int.TryParse(content[5].Split('=')[1].Trim(), out int a)
+                                ) {
+                                string ruleName = content[1].Split('=')[1].Trim().Trim('"');
+                                var parsedRule = new Rule_BanColor(ruleName, sdr::Color.FromArgb(a, r, g, b));
+                                presetRules.Add(parsedRule);
+                            }
+                            break;
+                        case 2:
+                            if (int.TryParse(content[2].Split('=')[1].Trim(), out int i) &&
+                                int.TryParse(content[3].Split('=')[1].Trim(), out int x) &&
+                                int.TryParse(content[4].Split('=')[1].Trim(), out int y)
+                                ) {
+                                string ruleName = content[1].Split('=')[1].Trim().Trim('"');
+                                var parsedRule = new Rule_AlterRotationCenter(ruleName, i, x, y);
+                                presetRules.Add(parsedRule);
+                            }
+                            break;
+                    }
+                }
+            }
+
+            return presetRules;
         }
     }
 

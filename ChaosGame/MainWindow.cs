@@ -25,6 +25,8 @@ namespace ChaosGame {
         public MainWindow() {
             InitializeComponent();
             CreateNewGame();
+            //Rules = new List<Rule> { new Rule_CheckVertices("The same vertex can't be chosen twice in a row.", 0, 0, 0),
+            //    new Rule_CheckVertices("The same vertex can't be a neighbor of the last vertex.", 0, 0, 0) };
         }
 
         #region Main controls
@@ -106,7 +108,7 @@ namespace ChaosGame {
 
         #region Rules options controls
         private void button_ApplyRulesOptions_Click(object sender, EventArgs e) {
-            gm.AssignRulesVariables(Vertices, CompressionRatio, Rotation, Rules);
+            gm.AssignRulesVariables(Vertices, CompressionRatio, Rotation, Rules, IterationsToIgnore);
             if (UseAutomaticSeed) gm.AssignSeed(gm.GetAutomaticSeed());
             else gm.AssignSeed(Seed);
             
@@ -239,6 +241,11 @@ namespace ChaosGame {
         private void button1_Click(object sender, EventArgs e) {
             gm.LoadOwo();
             UpdateBitmap();
+        }
+
+        private void button_ruleList_Click(object sender, EventArgs e) {
+            RuleEditor r = new RuleEditor();
+            r.ShowDialog(Rules);
         }
     }
 }

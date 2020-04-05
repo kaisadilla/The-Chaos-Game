@@ -25,8 +25,6 @@ namespace ChaosGame {
         public MainWindow() {
             InitializeComponent();
             CreateNewGame();
-            //Rules = new List<Rule> { new Rule_CheckVertices("The same vertex can't be chosen twice in a row.", 0, 0, 0),
-            //    new Rule_CheckVertices("The same vertex can't be a neighbor of the last vertex.", 0, 0, 0) };
         }
 
         #region Main controls
@@ -50,9 +48,9 @@ namespace ChaosGame {
         }
 
         private void button_restart_Click(object sender, EventArgs e) {
-            groupBox_visualOptions.Enabled = true;
-            tabControl_rules.Enabled = false;
-            groupBox_generation.Enabled = false;
+            EnableVisualControl = true;
+            EnableRulesControl = false;
+            EnableGenerationControl = false;
             gm.ClearBitmap();
             UpdateBitmap();
         }
@@ -67,9 +65,9 @@ namespace ChaosGame {
                 gm.AssignVisualVariablesAndLoadImage(filePath, VertexSize, VertexColor, KeepVerticesOnTop, GpSize, GpColor);
             }
 
-            groupBox_visualOptions.Enabled = false;
-            tabControl_rules.Enabled = true;
-            groupBox_generation.Enabled = false;
+            EnableVisualControl = false;
+            EnableRulesControl = true;
+            EnableGenerationControl = false;
 
             LoadBitmap();
             /*New maps are generated with 3 vertices forming a triangle.
@@ -146,6 +144,20 @@ namespace ChaosGame {
         #endregion
 
         #region Rules options controls
+        private void button_loadPreset_Click(object sender, EventArgs e) {
+            LoadPreset p = new LoadPreset();
+            string path = p.ShowDialog();
+            if (path != "") {
+                ImportJsonPreset(path);
+            }
+        }
+
+        private void button_savePreset_Click(object sender, EventArgs e) {
+            string presetName = InputBox.ShowDialog("Save preset", "Name your preset:", "New preset");
+            if(presetName != "") {
+                CreateJsonPreset(presetName);
+            }
+        }
 
         private void tabControl_rules_SelectedIndexChanged(object sender, EventArgs e) {
             if (tabControl_rules.SelectedIndex == 0) {
@@ -160,11 +172,11 @@ namespace ChaosGame {
             gm.AssignRulesVariables(Vertices, DrawSides, SideColor, CompressionRatio, Rotation, Rules, IterationsToIgnore);
             if (UseAutomaticSeed) gm.AssignSeed(gm.GetAutomaticSeed());
             else gm.AssignSeed(Seed);
-            
-            groupBox_visualOptions.Enabled = false;
-            tabControl_rules.Enabled = false;
-            groupBox_generation.Enabled = true;
-            
+
+            EnableVisualControl = false;
+            EnableRulesControl = false;
+            EnableGenerationControl = true;
+
             gm.DrawVertices();
             gm.DrawSeed();
             UpdateBitmap();
@@ -223,7 +235,7 @@ namespace ChaosGame {
 
         //Use IFS
         private void button_ApplyIFS_Click(object sender, EventArgs e) {
-            gm.AssignIFSVariables(IfsFormulas, CenterPoint, IfsMagnificationX, IfsMagnificationY, DrawAxes);
+            gm.AssignIFSVariables(IfsFormulas, CenterPoint, IfsMagnificationX, IfsMagnificationY, DrawAxes, IterationsToIgnore);
             groupBox_visualOptions.Enabled = false;
             tabControl_rules.Enabled = false;
             groupBox_generation.Enabled = true;
@@ -238,6 +250,10 @@ namespace ChaosGame {
         }
 
         private void checkBox_drawAxes_CheckedChanged(object sender, EventArgs e) {
+            PreviewAxes();
+        }
+
+        private void UpdateCenterPointEvent(object sender, EventArgs e) {
             PreviewAxes();
         }
         #endregion

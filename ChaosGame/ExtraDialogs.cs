@@ -8,6 +8,8 @@ using HSVColor = System.Tuple<double, double, double>;
 using ChaosGame;
 using CGNamespaces.ExtraFunctions;
 using System.IO;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace System.Windows.Forms.ExtraDialogs {
     public class VertexEditor {
@@ -699,13 +701,12 @@ namespace System.Windows.Forms.ExtraDialogs {
         }
     }
 
-
     class AddRuleDialog {
         #region Components of the dialog
         private Form dialog = new Form() {
             ClientSize = new sdr::Size(539, 308),
             FormBorderStyle = FormBorderStyle.FixedDialog,
-            Text = "List of points",
+            Text = "List of rules",
             StartPosition = FormStartPosition.CenterScreen,
             MaximizeBox = false,
             MinimizeBox = false
@@ -1114,6 +1115,109 @@ namespace System.Windows.Forms.ExtraDialogs {
             }
 
             return presetRules;
+        }
+    }
+
+    class LoadPreset {
+        private readonly string PRESET_FORMAT = ".cgpreset";
+
+        #region Components of the dialog
+        private Form dialog = new Form() {
+            ClientSize = new sdr::Size(370, 269),
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            Text = "List of points",
+            StartPosition = FormStartPosition.CenterScreen,
+            MaximizeBox = false,
+            MinimizeBox = false
+        };
+
+        private Label label_savedPresets = new Label() {
+            Left = 10,
+            Top = 10,
+            AutoSize = true,
+            Text = "Saved presets:"
+        };
+
+        private ListView listView_savedPresets = new ListView() {
+            Left = 10,
+            Top = 30,
+            Width = 350,
+            Height = 200,
+            View = View.SmallIcon,
+            Alignment = ListViewAlignment.Left,
+            HideSelection = false,
+            AllowDrop = true, //don't forget
+            MultiSelect = false,
+            ShowItemToolTips = true,
+        };
+
+        private Button button_ok = new Button() {
+            Left = 286,
+            Top = 236,
+            Width = 75,
+            Text = "OK",
+            DialogResult = DialogResult.OK
+        };
+        #endregion
+
+        public List<string> presetPaths = new List<string>();
+
+        public string ShowDialog() {
+            listView_savedPresets.DragEnter += (sender, e) => {
+                e.Effect = DragDropEffects.Copy;
+            };
+            listView_savedPresets.DragDrop += (sender, e) => {
+                string[] paths = (string[])e.Data.GetData(DataFormats.FileDrop);
+                if (paths == null) return;
+                foreach(string p in paths) {
+                    if (Path.GetExtension(p) != PRESET_FORMAT) continue;
+                    try {
+                        File.Copy(p, @".\res\presets\" + Path.GetFileName(p));
+                    }
+                    catch (Exception ex) {
+                        MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    LoadPresets();
+                }
+            };
+
+            dialog.Controls.Add(label_savedPresets);
+            dialog.Controls.Add(listView_savedPresets);
+            dialog.Controls.Add(button_ok);
+            
+            LoadPresets();
+
+            DialogResult result = dialog.ShowDialog();
+
+            if (result == DialogResult.OK) {
+                int index = (listView_savedPresets.SelectedIndices != null) ? listView_savedPresets.SelectedIndices[0] : -1;
+                if (index != -1) {
+                    return presetPaths[index];
+                }
+            }
+
+            return "";
+        }
+
+        private void LoadPresets() {
+            string[] allPaths = Directory.GetFiles(@".\res\presets");
+
+            foreach(string path in allPaths) {
+                if (Path.GetExtension(path) != PRESET_FORMAT) continue;
+                presetPaths.Add(path);
+            }
+
+            listView_savedPresets.Items.Clear();
+            foreach (string path in presetPaths) {
+                if (Path.GetExtension(path) != PRESET_FORMAT) continue;
+                JObject preset = JObject.Parse(File.ReadAllText(path));
+                ListViewItem presetView = new ListViewItem((string)preset["name"]);
+
+                if ((string)preset["type"] == "chaos") presetView.ForeColor = sdr::Color.Blue;
+                if ((string)preset["type"] == "ifs") presetView.ForeColor = sdr::Color.Red;
+
+                listView_savedPresets.Items.Add(presetView);
+            }
         }
     }
 

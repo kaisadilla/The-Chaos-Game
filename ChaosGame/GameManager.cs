@@ -146,13 +146,15 @@ namespace ChaosGame {
             for(int i = 0; i < vertexCache.Length; i++) vertexCache[i] = -1;
         }
 
-        public void AssignIFSVariables(List<IFSFormula> ifsFormulas, Point centerPoint, float magnificationX, float magnificationY, bool drawAxes) {
+        public void AssignIFSVariables(List<IFSFormula> ifsFormulas, Point centerPoint, float magnificationX, float magnificationY, bool drawAxes, int iterationsToIgnore) {
             UseIfs = true;
             IfsFormulas = ReplicateList(ifsFormulas);
             IfsMagnificationX = magnificationX;
             IfsMagnificationY = magnificationY;
             CenterPoint = centerPoint;
             DrawAxes = drawAxes;
+            IterationsToIgnore = iterationsToIgnore;
+
             CalculateIFSWeight();
             Vertices = null;
 
@@ -476,7 +478,7 @@ namespace ChaosGame {
                 zoomedBitmap = zoomedMap;
                 return true;
             }
-            catch (ArgumentException e) {
+            catch (ArgumentException ex) {
                 zoomedBitmap = null;
                 return false;
             }

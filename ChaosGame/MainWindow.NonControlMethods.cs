@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using CGNamespaces.ExtraFunctions;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace ChaosGame {
     public partial class MainWindow {
@@ -21,7 +24,9 @@ namespace ChaosGame {
             new IFSFormula(-0.15f, 0.28f, 0.26f, 0.24f, 0, 0.44f, 0.07f)
         };
 
-        GameManager gm; //Whenever we start a new game, we create a new GameManager to replace the current one. One is called on MainWindow().
+        private JsonSerializer json = new JsonSerializer();
+
+        private GameManager gm; //Whenever we start a new game, we create a new GameManager to replace the current one. One is called on MainWindow().
         private string filePath;
         //This List<Vertex> is not the same list as GameManager's Vertices list. It does not contain the same Vertex objects, either.
         //This vertices variable and GameManager's Vertices should NEVER interact with each other, unless they use the method GameManager.ReplicateList()
@@ -48,9 +53,9 @@ namespace ChaosGame {
         
         private void CreateNewGame() {
             gm = new GameManager();
-            groupBox_visualOptions.Enabled = true;
-            tabControl_rules.Enabled = false;
-            groupBox_generation.Enabled = false;
+            EnableVisualControl = true;
+            EnableRulesControl = false;
+            EnableGenerationControl = false;
             //Asign new game values to controls.
             pictureBox_bitmap.Image = null;
             pictureBox_bitmap.BorderStyle = BorderStyle.None;
@@ -97,6 +102,9 @@ namespace ChaosGame {
 
         private void PreviewVertices() {
             label_pointCount.Text = "Count: " + Vertices.Count.ToString();
+
+            button_ApplyRulesOptions.Enabled = (Vertices.Count < 2) ? false : true;
+
             if (pictureBox_bitmap.Image == null) return;
             else {
                 pictureBox_bitmap.Image = gm.GetPreviewBitmap(Vertices, Zoom, DrawSides, SideColor);
@@ -318,8 +326,14 @@ namespace ChaosGame {
         }
 
         private int IterationsToIgnore {
-            get => (int)numeric_ignoreIterationsVal.Value;
-            set => numeric_ignoreIterationsVal.Value = value;
+            get {
+                if (!UseIfs) return (int)numeric_ignoreIterationsVal.Value;
+                else return (int)numeric_ifs_ignoreIterationsVal.Value;
+            }
+            set {
+                if (!UseIfs) numeric_ignoreIterationsVal.Value = value;
+                else numeric_ifs_ignoreIterationsVal.Value = value;
+            }
         }
 
         private bool DrawSides {
@@ -332,6 +346,17 @@ namespace ChaosGame {
             set {
                 pictureBox_sideColor.BackColor = value;
                 label_sideColorVal.Text = value.HexValue();
+            }
+        }
+
+        private bool UseIfs {
+            get {
+                if (tabControl_rules.SelectedIndex == 1) return true;
+                return false;
+            }
+            set {
+                if (value) tabControl_rules.SelectTab(1);
+                else tabControl_rules.SelectTab(0);
             }
         }
 
@@ -379,6 +404,227 @@ namespace ChaosGame {
         private bool LinkIfsMagnify {
             get => checkBox_linkIfsMagnify.Checked;
             set => checkBox_linkIfsMagnify.Checked = value;
+        }
+
+        private bool EnableVisualControl {
+            get => groupBox_visualOptions.Enabled;
+            set => groupBox_visualOptions.Enabled = value;
+        }
+
+        private bool EnableRulesControl {
+            get => tabControl_rules.Enabled;
+            set {
+                tabControl_rules.Enabled = value;
+                button_loadPreset.Enabled = value;
+                button_savePreset.Enabled = value;
+            }
+        }
+
+        private bool EnableGenerationControl {
+            get => groupBox_generation.Enabled;
+            set => groupBox_generation.Enabled = value;
+        }
+
+        private void ImportJsonPreset(string path) {
+            JObject preset = JObject.Parse(File.ReadAllText(path));
+
+            if ((string)preset["type"] == "chaos") {
+                //Parse data.
+                JArray presetVertices = (JArray)preset["vertexList"];
+                JArray presetRules = (JArray)preset["ruleList"];
+
+                List<Vertex> vertexList = new List<Vertex>();
+                for(int i = 0; i < presetVertices.Count; i++) {
+                    int x = int.Parse((string)presetVertices[i]["x"]);
+                    int y = int.Parse((string)presetVertices[i]["y"]);
+                    float vComp = int.Parse((string)presetVertices[i]["compression"]);
+                    float vRot = int.Parse((string)presetVertices[i]["rotation"]);
+                    int vWeight = int.Parse((string)presetVertices[i]["weight"]);
+                    Vertex newVertex = new Vertex(x, y, vComp, vRot, vWeight);
+                    vertexList.Add(newVertex);
+                }
+
+                bool autoSeed = (bool)preset["autoSeed"];
+                int seedX = 0, seedY = 0;
+
+                if(!autoSeed) {
+                    seedX = (int)preset["seedX"];
+                    seedY = (int)preset["seedY"];
+                }
+                float compression = (float)preset["compression"];
+                float rotation = (float)preset["rotation"];
+
+                List<Rule> ruleList = new List<Rule>();
+                for(int i = 0; i < presetRules.Count; i++) {
+                    string ruleName = (string)presetRules[i]["ruleName"];
+                    int ruleType = (int)presetRules[i]["ruleType"];
+                    if (ruleType == 0) {
+                        int m = (int)presetRules[i]["m"];
+                        int n = (int)presetRules[i]["n"];
+                        int o = (int)presetRules[i]["o"];
+                        ruleList.Add(new Rule_CheckVertices(ruleName, m, n, o));
+                    }
+                    else if (ruleType == 1) {
+                        int r = (int)presetRules[i]["r"];
+                        int g = (int)presetRules[i]["g"];
+                        int b = (int)presetRules[i]["b"];
+                        int a = (int)presetRules[i]["a"];
+                        ruleList.Add(new Rule_BanColor(ruleName, System.Drawing.Color.FromArgb(a, r, g, b)));
+                    }
+                    else if (ruleType == 2) {
+                        int vIndex = (int)presetRules[i]["i"];
+                        int x = (int)presetRules[i]["x"];
+                        int y = (int)presetRules[i]["y"];
+                        ruleList.Add(new Rule_AlterRotationCenter(ruleName, vIndex, x, y));
+                    }
+                }
+                //Apply data
+                UseIfs = false;
+                Vertices = vertexList;
+                UseAutomaticSeed = autoSeed;
+                if (!autoSeed) {
+                    Seed = new System.Drawing.Point(seedX, seedY);
+                }
+                CompressionRatio = compression;
+                Rotation = rotation;
+                Rules = ruleList;
+            }
+            else if((string)preset["type"] == "ifs") {
+                //Parse data
+                JArray presetFormulas = (JArray)preset["formula"];
+                List<IFSFormula> formulaList = new List<IFSFormula>();
+
+                for(int i = 0; i < presetFormulas.Count; i++) {
+                    float a = (float)presetFormulas[i]["a"];
+                    float b = (float)presetFormulas[i]["b"];
+                    float c = (float)presetFormulas[i]["c"];
+                    float d = (float)presetFormulas[i]["d"];
+                    float e = (float)presetFormulas[i]["e"];
+                    float f = (float)presetFormulas[i]["f"];
+                    float p = (float)presetFormulas[i]["p"];
+                    formulaList.Add(new IFSFormula(a, b, c, d, e, f, p));
+                }
+
+                int centerPointX = (int)preset["centerPointX"];
+                int centerPointY = (int)preset["centerPointY"];
+                float magnifyX = (float)preset["magnifyX"];
+                float magnifyY = (float)preset["magnifyY"];
+
+                //Apply data
+                UseIfs = true;
+                IfsFormulas = formulaList;
+                CenterPoint = new System.Drawing.Point(centerPointX, centerPointY);
+                IfsMagnificationX = magnifyX;
+                IfsMagnificationY = magnifyY;
+            }
+        }
+
+        private void CreateJsonPreset(string name) {
+            List<string> jsonLines = new List<string>();
+            jsonLines.Add("{");
+            jsonLines.Add("	\"name\": \"" + name + "\",");
+            if(!UseIfs) {
+                jsonLines.Add("	\"type\": \"chaos\",");
+                jsonLines.Add("	\"vertexList\": [");
+                foreach(Vertex v in Vertices) {
+                    jsonLines.Add("		{");
+                    jsonLines.Add("		    \"x\": " + v.X + ",");
+                    jsonLines.Add("		    \"y\": " + v.Y + ",");
+                    jsonLines.Add("		    \"compression\": " + v.compressionRatio + ",");
+                    jsonLines.Add("		    \"rotation\": " + v.rotation + ",");
+                    jsonLines.Add("		    \"weight\": " + v.weight);
+                    jsonLines.Add("		},");
+                }
+                jsonLines.Add("	],");
+                if (UseAutomaticSeed) {
+                    jsonLines.Add("	\"autoSeed\": true,");
+                }
+                else {
+                    jsonLines.Add("		\"autoSeed\": false,");
+                    jsonLines.Add("		\"seedX\": " + Seed.X + ",");
+                    jsonLines.Add("		\"seedX\": " + Seed.Y + ",");
+                }
+                jsonLines.Add("	\"compression\": \"" + CompressionRatio + "\",");
+                jsonLines.Add("	\"rotation\": \"" + Rotation + "\",");
+                jsonLines.Add("	\"ruleList\": [");
+                foreach (Rule r in Rules) {
+                    if(r is Rule_CheckVertices casted0) {
+                        jsonLines.Add("		{");
+                        jsonLines.Add("		    \"ruleType\": 0, ");
+                        jsonLines.Add("		    \"ruleName\": " + casted0.RuleName + ",");
+                        jsonLines.Add("		    \"m\": " + casted0.m + ",");
+                        jsonLines.Add("		    \"n\": " + casted0.n + ",");
+                        jsonLines.Add("		    \"o\": " + casted0.distance);
+                        jsonLines.Add("		},");
+                    }
+                    else if (r is Rule_BanColor casted1) {
+                        jsonLines.Add("		{");
+                        jsonLines.Add("		    \"ruleType\": 1, ");
+                        jsonLines.Add("		    \"ruleName\": " + casted1.RuleName + ",");
+                        jsonLines.Add("		    \"r\": " + casted1.color.R + ",");
+                        jsonLines.Add("		    \"g\": " + casted1.color.G + ",");
+                        jsonLines.Add("		    \"b\": " + casted1.color.B + ",");
+                        jsonLines.Add("		    \"a\": " + casted1.color.A);
+                        jsonLines.Add("		},");
+                    }
+                    else if (r is Rule_AlterRotationCenter casted2) {
+                        jsonLines.Add("		{");
+                        jsonLines.Add("		    \"ruleType\": 2, ");
+                        jsonLines.Add("		    \"ruleName\": " + casted2.RuleName + ",");
+                        jsonLines.Add("		    \"i\": " + casted2.affectedVertex + ",");
+                        jsonLines.Add("		    \"x\": " + casted2.x + ",");
+                        jsonLines.Add("		    \"y\": " + casted2.y);
+                        jsonLines.Add("		},");
+                    }
+                }
+                jsonLines.Add("	],");
+            }
+            else if (UseIfs) {
+                jsonLines.Add("	\"type\": \"ifs\",");
+                jsonLines.Add("	\"formula\": [");
+                foreach (IFSFormula f in IfsFormulas) {
+                    jsonLines.Add("		{");
+                    jsonLines.Add("		    \"a\": " + f.a + ",");
+                    jsonLines.Add("		    \"b\": " + f.b + ",");
+                    jsonLines.Add("		    \"c\": " + f.c + ",");
+                    jsonLines.Add("		    \"d\": " + f.d + ",");
+                    jsonLines.Add("		    \"e\": " + f.e + ",");
+                    jsonLines.Add("		    \"f\": " + f.f + ",");
+                    jsonLines.Add("		    \"p\": " + f.p + ",");
+                    jsonLines.Add("		},");
+                }
+                jsonLines.Add("	],");
+                jsonLines.Add("	\"centerPointX\": \"" + CenterPoint.X + "\",");
+                jsonLines.Add("	\"centerPointY\": \"" + CenterPoint.Y + "\",");
+                jsonLines.Add("	\"magnifyX\": \"" + IfsMagnificationX + "\",");
+                jsonLines.Add("	\"magnifyY\": \"" + IfsMagnificationY + "\"");
+            }
+            jsonLines.Add("}");
+
+            //Removing invalid filename characters as listed here: https://gist.github.com/doctaphred/d01d05291546186941e1b7ddc02034d3
+            string path = name.Replace(' ', '_').Replace("<", "").Replace(">", "").Replace(":", "").Replace("\"", "").Replace("/", "");
+            path = path.Replace("\\", "").Replace("|", "").Replace("?", "").Replace("*", "");
+
+            path = @".\res\presets\" + path.ToLower();
+
+            int index = 0;
+
+            if (File.Exists(path + ".cgpreset")) {
+                do {
+                    index++;
+                }
+                while (Directory.Exists(path + "_" + index + ".cgpreset"));
+
+                path = path + "_" + index.ToString();
+            }
+
+            path = path + ".cgpreset";
+
+            using (StreamWriter outputFile = new StreamWriter(path)) {
+                foreach(string line in jsonLines) {
+                    outputFile.WriteLine(line);
+                }
+            }
         }
     }
 }

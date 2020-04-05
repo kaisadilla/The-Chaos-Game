@@ -112,8 +112,6 @@
             this.label_ifsMagnifyX = new System.Windows.Forms.Label();
             this.numeric_ifsMagnifyX = new System.Windows.Forms.NumericUpDown();
             this.groupBox_centerPoint = new System.Windows.Forms.GroupBox();
-            this.button2 = new System.Windows.Forms.Button();
-            this.button3 = new System.Windows.Forms.Button();
             this.label_cpX = new System.Windows.Forms.Label();
             this.numeric_cpX = new System.Windows.Forms.NumericUpDown();
             this.label_cpY = new System.Windows.Forms.Label();
@@ -124,6 +122,10 @@
             this.numeric_ifsMagnifyY = new System.Windows.Forms.NumericUpDown();
             this.label_ifsMagnifyY = new System.Windows.Forms.Label();
             this.checkBox_linkIfsMagnify = new System.Windows.Forms.CheckBox();
+            this.numeric_ifs_ignoreIterationsVal = new System.Windows.Forms.NumericUpDown();
+            this.label_ifs_ignoreIterations = new System.Windows.Forms.Label();
+            this.button_loadPreset = new System.Windows.Forms.Button();
+            this.button_savePreset = new System.Windows.Forms.Button();
             this.layout_table.SuspendLayout();
             this.layout_optionPanels.SuspendLayout();
             this.groupBox_visualOptions.SuspendLayout();
@@ -161,6 +163,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.numeric_cpX)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numeric_cpY)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numeric_ifsMagnifyY)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numeric_ifs_ignoreIterationsVal)).BeginInit();
             this.SuspendLayout();
             // 
             // layout_table
@@ -181,6 +184,8 @@
             // layout_optionPanels
             // 
             this.layout_optionPanels.AutoScroll = true;
+            this.layout_optionPanels.Controls.Add(this.button_savePreset);
+            this.layout_optionPanels.Controls.Add(this.button_loadPreset);
             this.layout_optionPanels.Controls.Add(this.tabControl_rules);
             this.layout_optionPanels.Controls.Add(this.groupBox_visualOptions);
             this.layout_optionPanels.Controls.Add(this.groupBox_generation);
@@ -761,7 +766,7 @@
             this.groupBox_generation.Controls.Add(this.button_nextIteration);
             this.groupBox_generation.Controls.Add(this.numeric_time);
             this.groupBox_generation.Controls.Add(this.numeric_iterations);
-            this.groupBox_generation.Location = new System.Drawing.Point(13, 640);
+            this.groupBox_generation.Location = new System.Drawing.Point(13, 669);
             this.groupBox_generation.Name = "groupBox_generation";
             this.groupBox_generation.Size = new System.Drawing.Size(250, 178);
             this.groupBox_generation.TabIndex = 4;
@@ -911,7 +916,7 @@
             // 
             this.groupBox_rules2.Controls.Add(this.button_saveBitmap);
             this.groupBox_rules2.Controls.Add(this.groupBox_restrictions);
-            this.groupBox_rules2.Location = new System.Drawing.Point(13, 824);
+            this.groupBox_rules2.Location = new System.Drawing.Point(13, 853);
             this.groupBox_rules2.Name = "groupBox_rules2";
             this.groupBox_rules2.Size = new System.Drawing.Size(250, 204);
             this.groupBox_rules2.TabIndex = 5;
@@ -1128,7 +1133,7 @@
             // 
             this.tabControl_rules.Controls.Add(this.tab_vertices);
             this.tabControl_rules.Controls.Add(this.tab_IFS);
-            this.tabControl_rules.Location = new System.Drawing.Point(13, 334);
+            this.tabControl_rules.Location = new System.Drawing.Point(13, 363);
             this.tabControl_rules.Name = "tabControl_rules";
             this.tabControl_rules.SelectedIndex = 0;
             this.tabControl_rules.Size = new System.Drawing.Size(252, 300);
@@ -1173,7 +1178,9 @@
             // tab_IFS
             // 
             this.tab_IFS.BackColor = System.Drawing.SystemColors.Control;
+            this.tab_IFS.Controls.Add(this.numeric_ifs_ignoreIterationsVal);
             this.tab_IFS.Controls.Add(this.checkBox_linkIfsMagnify);
+            this.tab_IFS.Controls.Add(this.label_ifs_ignoreIterations);
             this.tab_IFS.Controls.Add(this.checkBox_drawAxes);
             this.tab_IFS.Controls.Add(this.label_ifsMagnifyY);
             this.tab_IFS.Controls.Add(this.label_ifsMagnifyX);
@@ -1222,7 +1229,7 @@
             // label_ifsMagnifyX
             // 
             this.label_ifsMagnifyX.AutoSize = true;
-            this.label_ifsMagnifyX.Location = new System.Drawing.Point(4, 110);
+            this.label_ifsMagnifyX.Location = new System.Drawing.Point(3, 83);
             this.label_ifsMagnifyX.Name = "label_ifsMagnifyX";
             this.label_ifsMagnifyX.Size = new System.Drawing.Size(55, 13);
             this.label_ifsMagnifyX.TabIndex = 109;
@@ -1231,7 +1238,7 @@
             // numeric_ifsMagnifyX
             // 
             this.numeric_ifsMagnifyX.DecimalPlaces = 3;
-            this.numeric_ifsMagnifyX.Location = new System.Drawing.Point(65, 108);
+            this.numeric_ifsMagnifyX.Location = new System.Drawing.Point(64, 81);
             this.numeric_ifsMagnifyX.Maximum = new decimal(new int[] {
             10000,
             0,
@@ -1255,38 +1262,16 @@
             // 
             // groupBox_centerPoint
             // 
-            this.groupBox_centerPoint.Controls.Add(this.button2);
-            this.groupBox_centerPoint.Controls.Add(this.button3);
             this.groupBox_centerPoint.Controls.Add(this.label_cpX);
             this.groupBox_centerPoint.Controls.Add(this.numeric_cpX);
             this.groupBox_centerPoint.Controls.Add(this.label_cpY);
             this.groupBox_centerPoint.Controls.Add(this.numeric_cpY);
             this.groupBox_centerPoint.Location = new System.Drawing.Point(2, 36);
             this.groupBox_centerPoint.Name = "groupBox_centerPoint";
-            this.groupBox_centerPoint.Size = new System.Drawing.Size(236, 68);
+            this.groupBox_centerPoint.Size = new System.Drawing.Size(236, 41);
             this.groupBox_centerPoint.TabIndex = 103;
             this.groupBox_centerPoint.TabStop = false;
             this.groupBox_centerPoint.Text = "Center point:";
-            // 
-            // button2
-            // 
-            this.button2.Location = new System.Drawing.Point(121, 40);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(109, 23);
-            this.button2.TabIndex = 105;
-            this.button2.Text = "Generate rectangle";
-            this.button2.UseVisualStyleBackColor = true;
-            this.button2.Click += new System.EventHandler(this.button_dimRectangle_Click);
-            // 
-            // button3
-            // 
-            this.button3.Location = new System.Drawing.Point(6, 40);
-            this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(109, 23);
-            this.button3.TabIndex = 105;
-            this.button3.Text = "Generate square";
-            this.button3.UseVisualStyleBackColor = true;
-            this.button3.Click += new System.EventHandler(this.button_dimSquare_Click);
             // 
             // label_cpX
             // 
@@ -1319,7 +1304,7 @@
             0,
             0,
             0});
-            this.numeric_cpX.ValueChanged += new System.EventHandler(this.UpdatePictureBoxEvent);
+            this.numeric_cpX.ValueChanged += new System.EventHandler(this.UpdateCenterPointEvent);
             // 
             // label_cpY
             // 
@@ -1352,12 +1337,12 @@
             0,
             0,
             0});
-            this.numeric_cpY.ValueChanged += new System.EventHandler(this.UpdatePictureBoxEvent);
+            this.numeric_cpY.ValueChanged += new System.EventHandler(this.UpdateCenterPointEvent);
             // 
             // checkBox_drawAxes
             // 
             this.checkBox_drawAxes.AutoSize = true;
-            this.checkBox_drawAxes.Location = new System.Drawing.Point(8, 164);
+            this.checkBox_drawAxes.Location = new System.Drawing.Point(7, 137);
             this.checkBox_drawAxes.Name = "checkBox_drawAxes";
             this.checkBox_drawAxes.Size = new System.Drawing.Size(129, 17);
             this.checkBox_drawAxes.TabIndex = 110;
@@ -1389,7 +1374,7 @@
             // numeric_ifsMagnifyY
             // 
             this.numeric_ifsMagnifyY.DecimalPlaces = 3;
-            this.numeric_ifsMagnifyY.Location = new System.Drawing.Point(65, 134);
+            this.numeric_ifsMagnifyY.Location = new System.Drawing.Point(64, 107);
             this.numeric_ifsMagnifyY.Maximum = new decimal(new int[] {
             10000,
             0,
@@ -1414,7 +1399,7 @@
             // label_ifsMagnifyY
             // 
             this.label_ifsMagnifyY.AutoSize = true;
-            this.label_ifsMagnifyY.Location = new System.Drawing.Point(4, 136);
+            this.label_ifsMagnifyY.Location = new System.Drawing.Point(3, 109);
             this.label_ifsMagnifyY.Name = "label_ifsMagnifyY";
             this.label_ifsMagnifyY.Size = new System.Drawing.Size(55, 13);
             this.label_ifsMagnifyY.TabIndex = 109;
@@ -1425,13 +1410,55 @@
             this.checkBox_linkIfsMagnify.AutoSize = true;
             this.checkBox_linkIfsMagnify.Checked = true;
             this.checkBox_linkIfsMagnify.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.checkBox_linkIfsMagnify.Location = new System.Drawing.Point(145, 124);
+            this.checkBox_linkIfsMagnify.Location = new System.Drawing.Point(144, 97);
             this.checkBox_linkIfsMagnify.Name = "checkBox_linkIfsMagnify";
             this.checkBox_linkIfsMagnify.Size = new System.Drawing.Size(46, 17);
             this.checkBox_linkIfsMagnify.TabIndex = 110;
             this.checkBox_linkIfsMagnify.Text = "Link";
             this.checkBox_linkIfsMagnify.UseVisualStyleBackColor = true;
             this.checkBox_linkIfsMagnify.CheckedChanged += new System.EventHandler(this.checkBox_drawAxes_CheckedChanged);
+            // 
+            // numeric_ifs_ignoreIterationsVal
+            // 
+            this.numeric_ifs_ignoreIterationsVal.Location = new System.Drawing.Point(81, 156);
+            this.numeric_ifs_ignoreIterationsVal.Maximum = new decimal(new int[] {
+            10000,
+            0,
+            0,
+            0});
+            this.numeric_ifs_ignoreIterationsVal.Name = "numeric_ifs_ignoreIterationsVal";
+            this.numeric_ifs_ignoreIterationsVal.Size = new System.Drawing.Size(55, 20);
+            this.numeric_ifs_ignoreIterationsVal.TabIndex = 110;
+            this.numeric_ifs_ignoreIterationsVal.ThousandsSeparator = true;
+            // 
+            // label_ifs_ignoreIterations
+            // 
+            this.label_ifs_ignoreIterations.AutoSize = true;
+            this.label_ifs_ignoreIterations.Location = new System.Drawing.Point(6, 157);
+            this.label_ifs_ignoreIterations.Name = "label_ifs_ignoreIterations";
+            this.label_ifs_ignoreIterations.Size = new System.Drawing.Size(185, 13);
+            this.label_ifs_ignoreIterations.TabIndex = 111;
+            this.label_ifs_ignoreIterations.Text = "Ignore the first                      iterations.";
+            // 
+            // button_loadPreset
+            // 
+            this.button_loadPreset.Location = new System.Drawing.Point(13, 334);
+            this.button_loadPreset.Name = "button_loadPreset";
+            this.button_loadPreset.Size = new System.Drawing.Size(75, 23);
+            this.button_loadPreset.TabIndex = 2;
+            this.button_loadPreset.Text = "Load preset";
+            this.button_loadPreset.UseVisualStyleBackColor = true;
+            this.button_loadPreset.Click += new System.EventHandler(this.button_loadPreset_Click);
+            // 
+            // button_savePreset
+            // 
+            this.button_savePreset.Location = new System.Drawing.Point(94, 334);
+            this.button_savePreset.Name = "button_savePreset";
+            this.button_savePreset.Size = new System.Drawing.Size(75, 23);
+            this.button_savePreset.TabIndex = 2;
+            this.button_savePreset.Text = "Save preset";
+            this.button_savePreset.UseVisualStyleBackColor = true;
+            this.button_savePreset.Click += new System.EventHandler(this.button_savePreset_Click);
             // 
             // MainWindow
             // 
@@ -1487,6 +1514,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.numeric_cpX)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numeric_cpY)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numeric_ifsMagnifyY)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numeric_ifs_ignoreIterationsVal)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -1581,8 +1609,6 @@
         private System.Windows.Forms.Label label_ifsMagnifyX;
         private System.Windows.Forms.NumericUpDown numeric_ifsMagnifyX;
         private System.Windows.Forms.GroupBox groupBox_centerPoint;
-        private System.Windows.Forms.Button button2;
-        private System.Windows.Forms.Button button3;
         private System.Windows.Forms.Label label_cpX;
         private System.Windows.Forms.NumericUpDown numeric_cpX;
         private System.Windows.Forms.Label label_cpY;
@@ -1593,6 +1619,10 @@
         private System.Windows.Forms.Label label_ifsMagnifyY;
         private System.Windows.Forms.NumericUpDown numeric_ifsMagnifyY;
         private System.Windows.Forms.CheckBox checkBox_linkIfsMagnify;
+        private System.Windows.Forms.NumericUpDown numeric_ifs_ignoreIterationsVal;
+        private System.Windows.Forms.Label label_ifs_ignoreIterations;
+        private System.Windows.Forms.Button button_savePreset;
+        private System.Windows.Forms.Button button_loadPreset;
     }
 }
 

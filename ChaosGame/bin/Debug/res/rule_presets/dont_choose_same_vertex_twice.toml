@@ -1,0 +1,5 @@
+RuleType = 0
+RuleName = "The same vertex can't be chosen twice in a row."
+m = 0
+n = 0
+o = 0

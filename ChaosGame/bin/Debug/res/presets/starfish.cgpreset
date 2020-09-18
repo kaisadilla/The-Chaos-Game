@@ -1,0 +1,25 @@
+{
+	"name": "Starfish",
+	"type": "chaos",
+	"vertexList": [
+		{
+		    "x": 590,
+		    "y": 60,
+		    "compression": 5,
+		    "rotation": -1,
+		    "weight": 1
+		},
+		{
+		    "x": 320,
+		    "y": 330,
+		    "compression": 1.04,
+		    "rotation": 38,
+		    "weight": 11
+		},
+	],
+	"autoSeed": true,
+	"compression": "2",
+	"rotation": "0",
+	"ruleList": [
+	],
+}

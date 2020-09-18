@@ -1,0 +1,53 @@
+{
+	"name": "Square Fractal 3",
+	"type": "chaos",
+	"vertexList": [
+		{
+		    "x": 30,
+		    "y": 30,
+		    "compression": -1,
+		    "rotation": -1,
+		    "weight": -1
+		},
+		{
+		    "x": 30,
+		    "y": 670,
+		    "compression": -1,
+		    "rotation": -1,
+		    "weight": -1
+		},
+		{
+		    "x": 670,
+		    "y": 670,
+		    "compression": -1,
+		    "rotation": -1,
+		    "weight": -1
+		},
+		{
+		    "x": 670,
+		    "y": 30,
+		    "compression": -1,
+		    "rotation": -1,
+		    "weight": -1
+		},
+	],
+	"autoSeed": true,
+	"compression": "2",
+	"rotation": "0",
+	"ruleList": [
+		{
+		    "ruleType": 0, 
+		    "ruleName": "If the last two vertices were the same, this vertex can't be the one immediately after.",
+		    "m": 0,
+		    "n": 1,
+		    "o": 1
+		},
+		{
+		    "ruleType": 0, 
+		    "ruleName": "If the last two vertices were the same, this vertex can't be the one immediately before.",
+		    "m": 0,
+		    "n": 1,
+		    "o": -1
+		},
+	],
+}

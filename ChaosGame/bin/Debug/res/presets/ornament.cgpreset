@@ -1,0 +1,32 @@
+{
+	"name": "Ornament",
+	"type": "chaos",
+	"vertexList": [
+		{
+		    "x": 350,
+		    "y": 100,
+		    "compression": -1,
+		    "rotation": 90,
+		    "weight": -1
+		},
+		{
+		    "x": 350,
+		    "y": 600,
+		    "compression": -1,
+		    "rotation": -1,
+		    "weight": -1
+		},
+	],
+	"autoSeed": true,
+	"compression": "1.5",
+	"rotation": "25",
+	"ruleList": [
+		{
+		    "ruleType": 2, 
+		    "ruleName": "Move Vertex 0's center of rotation by (0, 125)",
+		    "i": 0,
+		    "x": 0,
+		    "y": 125
+		},
+	],
+}

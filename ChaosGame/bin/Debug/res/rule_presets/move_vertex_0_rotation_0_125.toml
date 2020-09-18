@@ -1,0 +1,5 @@
+RuleType = 2
+RuleName = "Move Vertex 0's center of rotation by (0, 125)"
+i = 0
+x = 0
+y = 125

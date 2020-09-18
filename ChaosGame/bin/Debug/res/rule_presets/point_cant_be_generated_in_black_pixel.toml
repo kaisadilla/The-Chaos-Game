@@ -1,0 +1,6 @@
+RuleType = 1
+RuleName = "A point can't be generated in a black pixel."
+r = 0
+g = 0
+b = 0
+a = 255

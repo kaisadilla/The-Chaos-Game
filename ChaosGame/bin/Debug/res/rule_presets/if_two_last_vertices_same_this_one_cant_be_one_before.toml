@@ -1,0 +1,5 @@
+RuleType = 0
+RuleName = If the last two vertices were the same, this vertex can't be the one immediately before.
+m = 0
+n = 1
+o = -1

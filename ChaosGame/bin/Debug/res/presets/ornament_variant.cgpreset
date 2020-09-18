@@ -1,0 +1,25 @@
+{
+	"name": "Ornament variant",
+	"type": "chaos",
+	"vertexList": [
+		{
+		    "x": 350,
+		    "y": 230,
+		    "compression": -1,
+		    "rotation": 90,
+		    "weight": -1
+		},
+		{
+		    "x": 350,
+		    "y": 630,
+		    "compression": -1,
+		    "rotation": 25,
+		    "weight": -1
+		},
+	],
+	"autoSeed": true,
+	"compression": "1.5",
+	"rotation": "0",
+	"ruleList": [
+	],
+}

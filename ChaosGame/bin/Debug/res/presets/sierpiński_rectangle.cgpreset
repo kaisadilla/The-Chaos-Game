@@ -1,0 +1,39 @@
+{
+	"name": "Sierpiński Rectangle",
+	"type": "chaos",
+	"vertexList": [
+		{
+		    "x": 30,
+		    "y": 30,
+		    "compression": -1,
+		    "rotation": -1,
+		    "weight": -1
+		},
+		{
+		    "x": 30,
+		    "y": 670,
+		    "compression": -1,
+		    "rotation": -1,
+		    "weight": -1
+		},
+		{
+		    "x": 670,
+		    "y": 670,
+		    "compression": -1,
+		    "rotation": -1,
+		    "weight": -1
+		},
+		{
+		    "x": 670,
+		    "y": 30,
+		    "compression": -1,
+		    "rotation": -1,
+		    "weight": -1
+		},
+	],
+	"autoSeed": true,
+	"compression": "2",
+	"rotation": "0",
+	"ruleList": [
+	],
+}

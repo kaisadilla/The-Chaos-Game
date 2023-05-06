@@ -437,8 +437,8 @@ namespace ChaosGame {
                 for(int i = 0; i < presetVertices.Count; i++) {
                     int x = int.Parse((string)presetVertices[i]["x"]);
                     int y = int.Parse((string)presetVertices[i]["y"]);
-                    float vComp = int.Parse((string)presetVertices[i]["compression"]);
-                    float vRot = int.Parse((string)presetVertices[i]["rotation"]);
+                    float vComp = float.Parse((string)presetVertices[i]["compression"]);
+                    float vRot = float.Parse((string)presetVertices[i]["rotation"]);
                     int vWeight = int.Parse((string)presetVertices[i]["weight"]);
                     Vertex newVertex = new Vertex(x, y, vComp, vRot, vWeight);
                     vertexList.Add(newVertex);
